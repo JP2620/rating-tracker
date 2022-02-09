@@ -24,6 +24,7 @@ class App(ttk.Window):
         self.title("Rating Tracker")
         self.set_icon('images/Table-Tennis-1.png')
         self.conn = self.create_database()
+        self.cur = self.conn.cursor()
         self.create_widgets()
 
     def set_icon(self, icon_path: str) -> None:
@@ -32,10 +33,11 @@ class App(ttk.Window):
 
     def create_widgets(self) -> None:
         self.player_form = PlayerForm(self, callback=self.callback_add_player,
-         text="Agregar jugador")
+                                      text="Agregar jugador")
         self.match_form = MatchForm(self, lambda: print(
             "Partida agregada"), text="Agregar resultado")
         self.data_view = DataView(self, conn=self.conn)
+        self.data_view.update_standings()
         self.match_form.grid(row=0, column=0, sticky="EW")
         self.player_form.grid(row=1, column=0, sticky="EW")
         self.data_view.grid(row=2, column=0, sticky="EW")
@@ -44,11 +46,11 @@ class App(ttk.Window):
         conn = None
         try:
             conn = sql.connect('torneo.db')
-            cur = conn.cursor()
+            self.cur = conn.cursor()
         except Error as e:
             print(e)
             exit()
-        cur.execute('''
+        self.cur.execute('''
       CREATE TABLE IF NOT EXISTS Player (
         PlayerId INTEGER PRIMARY KEY AUTOINCREMENT,
         Name TEXT NOT NULL,
@@ -56,7 +58,7 @@ class App(ttk.Window):
         UNIQUE(Name)
       ); '''
                     )
-        cur.execute('''
+        self.cur.execute('''
       CREATE TABLE IF NOT EXISTS Match (
         MatchId INTEGER PRIMARY KEY AUTOINCREMENT,
         Player1Id INTEGER NOT NULL,
@@ -69,21 +71,33 @@ class App(ttk.Window):
       ); '''
                     )
         conn.commit()
-        cur.close()
+        self.cur.close()
         return conn
-    
+
     def callback_add_player(self):
         try:
-          cur = self.conn.cursor()
-          cur.execute('''
+            self.cur = self.conn.cursor()
+            self.cur.execute('''
           INSERT INTO Player (Name, Rating)
           VALUES (?, ?)
           ''', (self.player_form.get_player(), self.player_form.get_rating()))
-          self.conn.commit()
+            self.conn.commit()
         except sql.Error as e:
-          print(e)
-          return
-        finally:
-          cur.close()
+            print(e)
+            return
         self.data_view.update_standings()
+
+        try:
+            self.cur = self.conn.cursor()
+            self.cur.execute('''
+          SELECT Name FROM Player
+          ''')
+            players = list(self.cur.fetchall())
+            self.match_form.update_player_opt(players)
+        except sql.Error as e:
+            print(e)
+            return
+        except Exception as e:
+            print(e)
+            return
         return

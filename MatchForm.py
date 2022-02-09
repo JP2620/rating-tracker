@@ -1,5 +1,6 @@
 import ttkbootstrap as ttk
 from typing import Callable
+from typing import List
 
 class MatchForm(ttk.LabelFrame):
   """
@@ -18,18 +19,14 @@ class MatchForm(ttk.LabelFrame):
     """
     self.names_1 = ttk.StringVar(self)
     self.sets_1 = ttk.IntVar(self)
-    self.jug_1_name = ttk.Combobox(self, textvariable=self.names_1, values= [
-      "John Doe", "Jane Doe", "Jack Doe", "Jill Doe"
-    ])
+    self.jug_1_name = ttk.Combobox(self, textvariable=self.names_1)
     self.jug_1_sets = ttk.Combobox(self, textvariable=self.sets_1,
      values=[0,1])
     self.jug_1_delta = ttk.Label(self, text="+10/-10")
 
     self.names_2 = ttk.StringVar(self)
     self.sets_2 = ttk.IntVar(self)
-    self.jug_2_name = ttk.Combobox(self, textvariable=self.names_2, values= [
-      "John Doe", "Jane Doe", "Jack Doe", "Jill Doe"
-      ])
+    self.jug_2_name = ttk.Combobox(self, textvariable=self.names_2)
     self.jug_2_sets = ttk.Combobox(self, textvariable=self.sets_2,
       values=[0,1])
     self.jug_2_delta = ttk.Label(self, text="+10/-10")
@@ -48,4 +45,9 @@ class MatchForm(ttk.LabelFrame):
     self.jug_2_sets.grid(row=1, column=1)
     self.jug_2_delta.grid(row=1, column=2)
     self.btn_check_deltas.grid(row=1, column=3) 
+    return
+  
+  def update_player_opt(self, players: List[str]) -> None:
+    self.jug_1_name["values"] = players
+    self.jug_2_name["values"] = players
     return

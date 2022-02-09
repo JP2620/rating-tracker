@@ -43,5 +43,4 @@ class PlayerForm(ttk.LabelFrame):
     Retorna el rating del jugador
     """
     return int(self.entry_rating.get())
-
     
