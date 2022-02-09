@@ -31,4 +31,17 @@ class PlayerForm(ttk.LabelFrame):
       width=20, command=self.callback)
     self.btn_add_jugador.grid(row=1, column=3)
     return
+  
+  def get_player(self) -> str:
+    """
+    Retorna el nombre del jugador
+    """
+    return self.entry_nombre.get()
+  
+  def get_rating(self) -> int:
+    """
+    Retorna el rating del jugador
+    """
+    return int(self.entry_rating.get())
+
     
