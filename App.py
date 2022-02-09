@@ -36,7 +36,7 @@ class App(ttk.Window):
     def create_widgets(self) -> None:
       self.player_form = PlayerForm(self, lambda: print("Jugador agregado"), text="Agregar jugador")
       self.match_form = MatchForm(self, lambda: print("Partida agregada"), text="Agregar resultado")
-      self.data_view = DataView(self)
+      self.data_view = DataView(self, conn=self.conn)
       self.match_form.grid(row=0, column=0, sticky="EW")
       self.player_form.grid(row=1, column=0, sticky="EW")
       self.data_view.grid(row=2, column=0, sticky="EW")
