@@ -1,4 +1,5 @@
 from PlayerForm import PlayerForm
+from MatchForm import MatchForm
 import tkinter as tk
 import ttkbootstrap as ttk
 import json
@@ -29,4 +30,6 @@ class App(ttk.Window):
     
     def create_widgets(self) -> None:
       self.player_form = PlayerForm(self, lambda: print("Jugador agregado"), text="Agregar jugador")
-      self.player_form.grid(row=0, column=0, sticky="EW")
+      self.match_form = MatchForm(self, lambda: print("Partida agregada"), text="Agregar resultado")
+      self.player_form.grid(row=1, column=0, sticky="EW")
+      self.match_form.grid(row=0, column=0, sticky="EW")
