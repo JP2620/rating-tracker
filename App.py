@@ -2,10 +2,12 @@ from PlayerForm import PlayerForm
 from MatchForm import MatchForm
 from DataView import DataView
 from typing import List
+from datetime import datetime
 import tkinter as tk
 import sqlite3 as sql
 import ttkbootstrap as ttk
 import json
+
 
 
 class App(ttk.Window):
@@ -41,7 +43,7 @@ class App(ttk.Window):
                                       text="Agregar jugador")
         self.match_form = MatchForm(self, text="Agregar resultado",
                                     callbacks=[
-                                        lambda: print("Partido agregado"),
+                                        self.callback_add_match,
                                         self.callback_show_deltas
                                     ])
         self.data_view = DataView(self, conn=self.conn)
@@ -73,9 +75,11 @@ class App(ttk.Window):
         MatchId INTEGER PRIMARY KEY AUTOINCREMENT,
         Player1Id INTEGER NOT NULL,
         Player2Id INTEGER NOT NULL,
+        Player1Rating INTEGER NOT NULL,
+        Player2Rating INTEGER NOT NULL,
         Player1Score INTEGER NOT NULL,
         Player2Score INTEGER NOT NULL,
-        Date TEXT NOT NULL,
+        Date TEXT,
         FOREIGN KEY(Player1Id) REFERENCES Player(PlayerId),
         FOREIGN KEY(Player2Id) REFERENCES Player(PlayerId)
       ); '''
@@ -139,7 +143,7 @@ class App(ttk.Window):
         else:
             return [(PTS_GANA_PEOR_aux[indice], -PTS_GANA_MEJOR_aux[indice]),
                     (PTS_GANA_MEJOR_aux[indice], -PTS_GANA_PEOR_aux[indice])]
-    
+
     def get_players(self) -> List[str]:
         try:
             self.cur.execute(
@@ -177,4 +181,68 @@ class App(ttk.Window):
         self.match_form.set_deltas(
             "+" + str(deltas[0][0]) + "/" + str(deltas[0][1]),
             "+" + str(deltas[1][0]) + "/" + str(deltas[1][1]))
+        return
+
+    def callback_add_match(self) -> None:
+        jug1 = self.match_form.get_player_1()
+        jug2 = self.match_form.get_player_2()
+        sets_1 = self.match_form.get_sets_1()
+        sets_2 = self.match_form.get_sets_2()
+        modalidad = self.match_form.get_modalidad()
+        players = self.get_players()
+
+        error_msg = ""
+        if jug1 == jug2:
+            error_msg = "Error: jugadores iguales"
+        elif (sets_1 == sets_2):
+            error_msg = "Error: sets iguales"
+        elif (sets_1 < 0 or sets_2 < 0):
+            error_msg = "Error: sets negativos"
+        elif ((not (jug1 in players)) or (not (jug2 in players))):
+            error_msg = "Error: jugadores no encontrados"
+        elif (sets_1 > modalidad // 2 + 1 or sets_2 > modalidad // 2 + 1):
+            error_msg = "Error: cantidad de sets mayor a la permitida"
+        if error_msg != "":
+            print(error_msg)
+            return
+
+        self.cur.execute('''
+            SELECT PlayerId, Name, Rating FROM Player
+            WHERE Name = ? OR Name = ?
+            ''', (jug1, jug2))
+        players = self.cur.fetchall()
+        jug1, jug2 = (players[0], players[1]) if players[0][1] == jug1 \
+            else (players[1], players[0])
+        
+        time = datetime.now()
+        self.cur.execute('''
+            INSERT INTO Match (Player1Id, Player2Id, Player1Rating,
+             Player2Rating, Player1Score, Player2Score, Date)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', (jug1[0], jug2[0], jug1[2], jug2[2], sets_1,
+              sets_2, time))
+        
+        deltas = self.get_deltas(jug1[2], jug2[2], modalidad)
+        new_rating1 = None
+        new_rating2 = None
+        if (sets_1 > sets_2):
+            new_rating1 = jug1[2] + deltas[0][0]
+            new_rating2 = jug2[2] + deltas[1][1]
+        else:
+            new_rating1 = jug1[2] + deltas[0][1]
+            new_rating2 = jug2[2] + deltas[1][0]
+        
+        self.cur.execute('''
+            UPDATE Player
+            SET Rating = ?
+            WHERE PlayerId = ?
+        ''', (new_rating1, jug1[0]))
+        self.cur.execute('''
+            UPDATE Player
+            SET Rating = ?
+            WHERE PlayerId = ?
+        ''', (new_rating2, jug2[0]))
+
+        self.conn.commit()
+        self.data_view.update_standings()
         return
