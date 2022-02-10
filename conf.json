@@ -2,5 +2,11 @@
   "resolution": {
     "width": 720,
     "height": 600
+  },
+  "multipliers": {
+    "Mejor de 1": 0.5,
+    "Mejor de 3": 1,
+    "Mejor de 5": 1.25,
+    "Mejor de 7": 1.5
   }
 }

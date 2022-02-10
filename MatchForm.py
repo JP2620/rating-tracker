@@ -36,15 +36,31 @@ class MatchForm(ttk.LabelFrame):
     self.btn_check_deltas = ttk.Button(self, text="Chequear +/-",
       width=20, command=lambda: print("delta chequeado"),
        bootstyle="outline")
+    
+    self.modalidad = ttk.IntVar(self)
+    self.modalidad.set(1)
+    modalidades_frame = ttk.Frame(self)
+    modalidades_frame.grid(row=0, column=0, sticky="EW")
+    modalidades = {
+      "Mejor de 1": 1,
+      "Mejor de 3": 3,
+      "Mejor de 5": 5,
+      "Mejor de 7": 7
+    }
+    for i, item in enumerate(modalidades):
+      ttk.Radiobutton(self, text=item, variable=self.modalidad,
+        value=modalidades[item], command=None).grid(
+        row=0, column=i)
+      modalidades_frame.columnconfigure(i, weight=1, uniform="group1")
 
-    self.jug_1_name.grid(row=0, column=0)
-    self.jug_1_sets.grid(row=0, column=1)
-    self.jug_1_delta.grid(row=0, column=2)
-    self.btn_save_match.grid(row=0, column=3)
-    self.jug_2_name.grid(row=1, column=0)
-    self.jug_2_sets.grid(row=1, column=1)
-    self.jug_2_delta.grid(row=1, column=2)
-    self.btn_check_deltas.grid(row=1, column=3) 
+    self.jug_1_name.grid(row=1, column=0)
+    self.jug_1_sets.grid(row=1, column=1)
+    self.jug_1_delta.grid(row=1, column=2)
+    self.btn_save_match.grid(row=1, column=3)
+    self.jug_2_name.grid(row=2, column=0)
+    self.jug_2_sets.grid(row=2, column=1)
+    self.jug_2_delta.grid(row=2, column=2)
+    self.btn_check_deltas.grid(row=2, column=3) 
     return
   
   def update_player_opt(self, players: List[str]) -> None:

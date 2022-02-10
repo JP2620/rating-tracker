@@ -20,6 +20,7 @@ class App(ttk.Window):
             str(config["resolution"]["width"]) + "x" +
             str(config["resolution"]["height"])
         )
+        self.MULTIPLICADORES = config["multipliers"]
         self.resizable(False, False)
         self.title("Rating Tracker")
         self.set_icon('images/Table-Tennis-1.png')
@@ -80,7 +81,7 @@ class App(ttk.Window):
             self.cur.execute('''
           INSERT INTO Player (Name, Rating)
           VALUES (?, ?)
-          ''', (self.player_form.get_player(), self.player_form.get_rating()))
+          ''', (self.player_form.get_player().upper(), self.player_form.get_rating()))
             self.conn.commit()
         except sql.Error as e:
             print(e)
