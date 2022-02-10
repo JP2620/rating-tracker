@@ -49,7 +49,7 @@ class MatchForm(ttk.LabelFrame):
     }
     for i, item in enumerate(modalidades):
       ttk.Radiobutton(self, text=item, variable=self.modalidad,
-        value=modalidades[item], command=None).grid(
+        value=modalidades[item], command=self.update_sets_opt).grid(
         row=0, column=i)
       modalidades_frame.columnconfigure(i, weight=1, uniform="group1")
 
@@ -66,4 +66,9 @@ class MatchForm(ttk.LabelFrame):
   def update_player_opt(self, players: List[str]) -> None:
     self.jug_1_name["values"] = players
     self.jug_2_name["values"] = players
+    return
+  
+  def update_sets_opt(self) -> None:
+    opt = [x for x in range(self.modalidad.get() // 2 + 2)]
+    self.jug_1_sets["values"] = self.jug_2_sets["values"] = opt 
     return
