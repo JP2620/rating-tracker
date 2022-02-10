@@ -9,7 +9,6 @@ import ttkbootstrap as ttk
 import json
 
 
-
 class App(ttk.Window):
     def __init__(self, master=None, **kwargs):
         super().__init__(master, **kwargs)
@@ -34,6 +33,7 @@ class App(ttk.Window):
         self.cur = self.conn.cursor()
         self.create_widgets()
 
+
     def set_icon(self, icon_path: str) -> None:
         self.iconphoto(False, tk.PhotoImage(file=icon_path))
         return
@@ -46,13 +46,15 @@ class App(ttk.Window):
                                         self.callback_add_match,
                                         self.callback_show_deltas
                                     ])
-        self.data_view = DataView(self, conn=self.conn)
-        self.data_view.update_standings()
+        self.data_view = DataView(self)
+
         self.match_form.grid(row=0, column=0, sticky="EW")
         self.player_form.grid(row=1, column=0, sticky="EW")
         self.data_view.grid(row=2, column=0, sticky="EW")
 
         self.match_form.update_player_opt(self.get_players())
+        self.data_view.update_matches(self.get_matches())
+        self.data_view.update_standings(self.get_standings())
 
     def create_database(self) -> sql.Connection:
         conn = None
@@ -99,7 +101,7 @@ class App(ttk.Window):
         except sql.Error as e:
             print(e)
             return
-        self.data_view.update_standings()
+        self.data_view.update_standings(self.get_standings())
 
         try:
             self.match_form.update_player_opt(self.get_players())
@@ -159,6 +161,15 @@ class App(ttk.Window):
             raise e
         return [x[0] for x in self.cur.fetchall()]
 
+    def get_standings(self) -> List:
+        self.cur.execute('''
+        SELECT ROW_NUMBER() OVER(ORDER BY Rating DESC) AS Standing, Name, Rating
+        FROM Player
+        ''')
+        standings = self.cur.fetchall()
+        return standings
+
+
     def callback_show_deltas(self) -> None:
         jug1 = self.match_form.get_player_1()
         jug2 = self.match_form.get_player_2()
@@ -191,6 +202,7 @@ class App(ttk.Window):
         modalidad = self.match_form.get_modalidad()
         players = self.get_players()
 
+        max_sets = modalidad // 2 + 1
         error_msg = ""
         if jug1 == jug2:
             error_msg = "Error: jugadores iguales"
@@ -200,8 +212,10 @@ class App(ttk.Window):
             error_msg = "Error: sets negativos"
         elif ((not (jug1 in players)) or (not (jug2 in players))):
             error_msg = "Error: jugadores no encontrados"
-        elif (sets_1 > modalidad // 2 + 1 or sets_2 > modalidad // 2 + 1):
+        elif (sets_1 > max_sets or sets_2 > max_sets):
             error_msg = "Error: cantidad de sets mayor a la permitida"
+        elif (sets_1 != max_sets and sets_2 != max_sets):
+            error_msg = "Error: Tienen que llegar a " + str(max_sets) + " sets"
         if error_msg != "":
             print(error_msg)
             return
@@ -213,7 +227,7 @@ class App(ttk.Window):
         players = self.cur.fetchall()
         jug1, jug2 = (players[0], players[1]) if players[0][1] == jug1 \
             else (players[1], players[0])
-        
+
         time = datetime.now()
         self.cur.execute('''
             INSERT INTO Match (Player1Id, Player2Id, Player1Rating,
@@ -221,7 +235,7 @@ class App(ttk.Window):
             VALUES (?, ?, ?, ?, ?, ?, ?)
         ''', (jug1[0], jug2[0], jug1[2], jug2[2], sets_1,
               sets_2, time))
-        
+
         deltas = self.get_deltas(jug1[2], jug2[2], modalidad)
         new_rating1 = None
         new_rating2 = None
@@ -231,7 +245,7 @@ class App(ttk.Window):
         else:
             new_rating1 = jug1[2] + deltas[0][1]
             new_rating2 = jug2[2] + deltas[1][0]
-        
+
         self.cur.execute('''
             UPDATE Player
             SET Rating = ?
@@ -244,6 +258,37 @@ class App(ttk.Window):
         ''', (new_rating2, jug2[0]))
 
         self.conn.commit()
-        self.data_view.update_standings()
-        self.data_view.update_matches()
+        self.data_view.update_standings(self.get_standings())
+        self.data_view.update_matches(self.get_matches())
         return
+
+    def get_matches(self) -> List:
+        self.cur.execute('''
+        SELECT t2.JUG1, t2.SETS1 || " - " || t2.SETS2 AS RESULTADO, t2.JUG2
+        FROM
+        (
+        	(
+        	SELECT Match.MatchId, Player.Name as JUG1, Match.Player1Score AS SETS1  
+        	FROM 
+        	(
+        		Match JOIN Player
+        		ON Match.Player1Id = Player.PlayerId
+        	)
+        	)
+        	AS t0
+        	JOIN
+        	(
+        	SELECT Match.MatchId, Player.Name AS JUG2, Match.Player2Score AS SETS2
+        	FROM
+        	(
+        		Match JOIN Player
+        		ON Match.Player2Id = Player.PlayerId
+        	)
+        	)
+        	AS t1
+        	ON t0.MatchId = t1.MatchId
+        ) AS t2
+        ''')
+        matches = self.cur.fetchall()
+        matches.reverse()   # Most recent first
+        return matches

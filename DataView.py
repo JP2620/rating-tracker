@@ -5,13 +5,10 @@ from ttkbootstrap.constants import *
 
 
 class DataView(ttk.Notebook):
-    def __init__(self, parent, conn: sql.Connection, **kwargs) -> None:
+    def __init__(self, parent, **kwargs) -> None:
         super().__init__(parent, **kwargs)
         self.parent = parent
-        self.conn = conn
         self.create_widgets()
-        self.update_standings()
-        self.update_matches()
         return
 
     def create_widgets(self) -> None:
@@ -47,58 +44,15 @@ class DataView(ttk.Notebook):
         self.add(standings_tab, text="Posiciones")
         self.add(matches_tab, text="Partidos")
 
-    def update_standings(self) -> None:
-        cur = self.conn.cursor()
-        cur.execute('''
-      SELECT Name, Rating
-      FROM Player
-      ORDER BY Rating DESC
-    ''')
-        standings = cur.fetchall()
-        rowdata = [
-            [i + 1, player[0], player[1]]
-            for i, player in enumerate(standings)
-        ]
-        cur.close()
-
+    def update_standings(self, standings: List) -> None:
         self.standings_tv.build_table_data(coldata=[
             {"text": "Posición", "stretch": True},
             {"text": "Nombre", "stretch": True},
             {"text": "Rating", "stretch": True}
-        ], rowdata=rowdata)
+        ], rowdata=standings)
         return
 
-    def update_matches(self) -> None:
-        cur = self.conn.cursor()
-        cur.execute('''
-      SELECT t2.JUG1, t2.SETS1 || " - " || t2.SETS2 AS RESULTADO, t2.JUG2
-      FROM
-      (
-      	(
-      	SELECT Match.MatchId, Player.Name as JUG1, Match.Player1Score AS SETS1  
-      	FROM 
-      	(
-      		Match JOIN Player
-      		ON Match.Player1Id = Player.PlayerId
-      	)
-      	)
-      	AS t0
-      	JOIN
-      	(
-      	SELECT Match.MatchId, Player.Name AS JUG2, Match.Player2Score AS SETS2
-      	FROM
-      	(
-      		Match JOIN Player
-      		ON Match.Player2Id = Player.PlayerId
-      	)
-      	)
-      	AS t1
-      	ON t0.MatchId = t1.MatchId
-      ) AS t2
-    ''')
-        matches = cur.fetchall()
-        matches.reverse()   # Most recent first
-        cur.close()
+    def update_matches(self, matches: List) -> None:
         self.matches_tv.build_table_data(coldata=[
             {"text": "Jugador 1", "stretch": True},
             {"text": "Resultado", "stretch": True},
