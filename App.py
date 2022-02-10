@@ -50,6 +50,8 @@ class App(ttk.Window):
         self.player_form.grid(row=1, column=0, sticky="EW")
         self.data_view.grid(row=2, column=0, sticky="EW")
 
+        self.match_form.update_player_opt(self.get_players())
+
     def create_database(self) -> sql.Connection:
         conn = None
         try:
@@ -96,18 +98,9 @@ class App(ttk.Window):
         self.data_view.update_standings()
 
         try:
-            self.cur = self.conn.cursor()
-            self.cur.execute('''
-          SELECT Name FROM Player
-          ''')
-            players = [x[0] for x in self.cur.fetchall()]
-            self.match_form.update_player_opt(players)
-        except sql.Error as e:
-            print(e)
-            return
-        except Exception as e:
-            print(e)
-            return
+            self.match_form.update_player_opt(self.get_players())
+        except:
+            pass
         return
 
     def get_deltas(self, rating_jug_1: int, rating_jug_2: int, sets_a_jugar: int) -> List[tuple]:
@@ -146,6 +139,21 @@ class App(ttk.Window):
         else:
             return [(PTS_GANA_PEOR_aux[indice], -PTS_GANA_MEJOR_aux[indice]),
                     (PTS_GANA_MEJOR_aux[indice], -PTS_GANA_PEOR_aux[indice])]
+    
+    def get_players(self) -> List[str]:
+        try:
+            self.cur.execute(
+                '''
+                SELECT Name FROM Player
+                '''
+            )
+        except sql.Error as e:
+            print(e)
+            raise e
+        except Exception as e:
+            print(e)
+            raise e
+        return [x[0] for x in self.cur.fetchall()]
 
     def callback_show_deltas(self) -> None:
         jug1 = self.match_form.get_player_1()

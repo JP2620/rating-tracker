@@ -22,14 +22,14 @@ class MatchForm(ttk.LabelFrame):
     self.jug_1_name = ttk.Combobox(self, textvariable=self.names_1)
     self.jug_1_sets = ttk.Combobox(self, textvariable=self.sets_1,
      values=[0,1])
-    self.jug_1_delta = ttk.Label(self, text="+10/-10")
+    self.jug_1_delta = ttk.Label(self, text="")
 
     self.names_2 = ttk.StringVar(self)
     self.sets_2 = ttk.IntVar(self)
     self.jug_2_name = ttk.Combobox(self, textvariable=self.names_2)
     self.jug_2_sets = ttk.Combobox(self, textvariable=self.sets_2,
       values=[0,1])
-    self.jug_2_delta = ttk.Label(self, text="+10/-10")
+    self.jug_2_delta = ttk.Label(self, text="")
 
     self.btn_save_match = ttk.Button(self, text="Guardar resultado",
       width=20, command=self.callbacks[0], bootstyle="primary")
