@@ -6,10 +6,10 @@ class MatchForm(ttk.LabelFrame):
   """
   Formulario para crear un jugador
   """
-  def __init__(self, parent, callback: Callable, **kwargs) -> None:
+  def __init__(self, parent, callbacks: List[Callable], **kwargs) -> None:
     super().__init__(parent, **kwargs)
     self.parent = parent
-    self.callback = callback
+    self.callbacks = callbacks
     self.create_widgets()
     return
   
@@ -32,10 +32,9 @@ class MatchForm(ttk.LabelFrame):
     self.jug_2_delta = ttk.Label(self, text="+10/-10")
 
     self.btn_save_match = ttk.Button(self, text="Guardar resultado",
-      width=20, command=self.callback, bootstyle="primary")
+      width=20, command=self.callbacks[0], bootstyle="primary")
     self.btn_check_deltas = ttk.Button(self, text="Chequear +/-",
-      width=20, command=lambda: print("delta chequeado"),
-       bootstyle="outline")
+      width=20, command=self.callbacks[1], bootstyle="outline")
     
     self.modalidad = ttk.IntVar(self)
     self.modalidad.set(1)
@@ -71,4 +70,24 @@ class MatchForm(ttk.LabelFrame):
   def update_sets_opt(self) -> None:
     opt = [x for x in range(self.modalidad.get() // 2 + 2)]
     self.jug_1_sets["values"] = self.jug_2_sets["values"] = opt 
+    return
+
+  def get_player_1(self) -> str:
+    return self.jug_1_name.get()
+
+  def get_player_2(self) -> str:
+    return self.jug_2_name.get()
+  
+  def get_modalidad(self) -> int:
+    return self.modalidad.get()
+  
+  def get_sets_1(self) -> int:
+    return self.sets_1.get()
+  
+  def get_sets_2(self) -> int:
+    return self.sets_2.get()
+
+  def set_deltas(self, delta_1: str, delta_2: str) -> None:
+    self.jug_1_delta["text"] = delta_1
+    self.jug_2_delta["text"] = delta_2
     return
