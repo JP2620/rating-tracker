@@ -245,4 +245,5 @@ class App(ttk.Window):
 
         self.conn.commit()
         self.data_view.update_standings()
+        self.data_view.update_matches()
         return
