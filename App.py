@@ -131,6 +131,8 @@ class App(ttk.Window):
             Messagebox.show_info(
                 message="Fallo al agregar jugador", title="Error")
             return
+
+        self.actions = self.actions[:self.actions_index + 1]
         self.actions.append(
             {
                 "action": "add_player",
@@ -292,6 +294,7 @@ class App(ttk.Window):
         self.conn.commit()
         self.data_view.update_standings(self.get_standings())
         self.data_view.update_matches(self.get_matches())
+        self.actions = self.actions[:self.actions_index + 1]
         self.actions.append(
             {
                 "action": "add_match",
@@ -345,7 +348,6 @@ class App(ttk.Window):
         if self.actions_index < 0:
             return
         last_action = self.actions[self.actions_index]
-        print(last_action)
         if last_action["action"] == "add_match":
             try:
                 self.cur.execute('''
@@ -374,7 +376,6 @@ class App(ttk.Window):
             except Exception as e:
                 print(e)
         elif last_action["action"] == "add_player":
-            print(last_action["player"])
             try:
                 self.cur.execute('''
                     DELETE FROM Player
@@ -395,7 +396,6 @@ class App(ttk.Window):
         if self.actions_index >= len(self.actions) - 1:
             return
         next_action = self.actions[self.actions_index + 1]
-        print(next_action)
 
         if next_action["action"] == "add_player":
             self.cur.execute('''
