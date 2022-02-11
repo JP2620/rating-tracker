@@ -295,12 +295,15 @@ class App(ttk.Window):
         self.actions.append(
             {
                 "action": "add_match",
-                "jug1": jug1[1],
-                "jug2": jug2[1],
+                "match": self.cur.lastrowid,
+                "jug1": jug1[0],
+                "jug2": jug2[0],
                 "sets_1": sets_1,
                 "sets_2": sets_2,
-                "rating1": jug1[2],
-                "rating2": jug2[2],
+                "old_rating1": jug1[2],
+                "old_rating2": jug2[2],
+                "new_rating1": new_rating1,
+                "new_rating2": new_rating2,
                 "time": time
             }
         )
@@ -375,7 +378,7 @@ class App(ttk.Window):
             try:
                 self.cur.execute('''
                     DELETE FROM Player
-                    WHERE PlayerId = ?
+                    WHERE Name = ?
                 ''', (last_action["player"],))
             except sql.Error as e:
                 print(e)
@@ -394,7 +397,34 @@ class App(ttk.Window):
         next_action = self.actions[self.actions_index + 1]
         print(next_action)
 
-        self.conn.commit()
+        if next_action["action"] == "add_player":
+            self.cur.execute('''
+                INSERT INTO Player (Name, Rating)
+                VALUES (?, ?)
+            ''', (next_action["player"], next_action["rating"]))
+            self.conn.commit()
+        elif next_action["action"] == "add_match":
+            try:
+                self.cur.execute('''
+                    INSERT INTO Match (Player1Id, Player1Rating, Player2Id, Player2Rating, Player1Score, Player2Score, Date)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                ''', (next_action["jug1"], next_action["old_rating1"], next_action["jug2"], next_action["old_rating2"],
+                      next_action["sets_1"], next_action["sets_2"], next_action["time"]))
+                self.cur.execute('''
+                    UPDATE Player
+                    SET Rating = CASE PlayerId
+                        WHEN ? THEN ?
+                        WHEN ? THEN ?
+                        ELSE Rating
+                    END
+                ''', (next_action["jug1"], next_action["new_rating1"], next_action["jug2"], next_action["new_rating2"]))
+                self.conn.commit()
+                self.actions[self.actions_index + 1]["match"] = self.cur.lastrowid
+
+            except sql.Error as e:
+                print(e)
+
+
         self.data_view.update_standings(self.get_standings())
         self.data_view.update_matches(self.get_matches())
         self.actions_index += 1
