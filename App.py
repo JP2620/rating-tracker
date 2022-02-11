@@ -6,6 +6,8 @@ from datetime import datetime
 import tkinter as tk
 import sqlite3 as sql
 import ttkbootstrap as ttk
+from ttkbootstrap.dialogs import Messagebox
+from ttkbootstrap.constants import *
 import json
 
 
@@ -104,6 +106,7 @@ class App(ttk.Window):
             self.conn.commit()
         except sql.Error as e:
             print(e)
+            Messagebox.show_info(message="Fallo al agregar jugador", title="Error")
             return
         self.data_view.update_standings(self.get_standings())
 
@@ -221,7 +224,7 @@ class App(ttk.Window):
         elif (sets_1 != max_sets and sets_2 != max_sets):
             error_msg = "Error: Tienen que llegar a " + str(max_sets) + " sets"
         if error_msg != "":
-            print(error_msg)
+            Messagebox.show_info(title="Error", message=error_msg)
             return
 
         self.cur.execute('''
