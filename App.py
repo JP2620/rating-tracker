@@ -6,6 +6,8 @@ from typing import List
 from datetime import datetime
 import tkinter as tk
 import sqlite3 as sql
+import pandas as pd
+import openpyxl
 import ttkbootstrap as ttk
 from ttkbootstrap.dialogs import Messagebox
 from ttkbootstrap.constants import *
@@ -66,15 +68,16 @@ class App(ttk.Window):
         self.btns_frame = ActionMenu(self,
                                      callbacks=[
                                          self.callback_undo,
-                                         self.callback_redo
+                                         self.callback_redo,
+                                         self.callback_export_excel
                                      ])
 
         self.match_form.grid(row=0, column=0, sticky="EW",
-                             padx=(20, 0), pady=10)
+                             padx=(70, 0), pady=10)
         self.player_form.grid(
-            row=1, column=0, sticky="EW", padx=(20, 0), pady=10)
+            row=1, column=0, sticky="EW", padx=(70, 0), pady=10)
         self.data_view.grid(row=2, column=0, sticky="EW",
-                            padx=(20, 0), pady=10)
+                            padx=(70, 0), pady=10)
         self.btns_frame.grid(row=0, column=1, rowspan=3,
                              padx=5, pady=10, sticky="N")
 
@@ -444,4 +447,27 @@ class App(ttk.Window):
         self.data_view.update_standings(self.get_standings())
         self.data_view.update_matches(self.get_matches())
         self.actions_index += 1
+        return
+    
+    def callback_export_excel(self) -> None:
+        wb = openpyxl.Workbook()
+
+        ws = wb.create_sheet("Posiciones")
+        ws.append(["Jugador", "Rating"])
+        self.cur.execute('''
+            SELECT Name, Rating
+            FROM Player
+            ORDER BY Rating DESC
+        ''')
+        for row in self.cur.fetchall():
+            ws.append(row)
+        
+        ws = wb.create_sheet("Partidos")
+        ws.append(["Jugador 1", "Resultado", "Jugador 2"])
+        for match in self.get_matches():
+            ws.append(match)
+
+        del wb["Sheet"]        
+        wb.save("liga.xlsx")
+
         return

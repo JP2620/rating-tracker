@@ -34,7 +34,7 @@ class ActionMenu(ttk.Frame):
         self.excel_img = tk.PhotoImage(file='images/icons8-microsoft-excel-30.png')
         self.btn_export_excel = ttk.Button(self,
                                 image=self.excel_img,
-                                command=lambda: print("hola"),
+                                command=self.callbacks[2],
                                 bootstyle="link")
         self.btn_export_excel.grid(row=2, column=0, padx=0, pady=0, sticky="N")
         ToolTip(self.btn_export_excel, text="Exportar a Excel")
