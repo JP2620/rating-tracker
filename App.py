@@ -301,6 +301,8 @@ class App(ttk.Window):
                 "match": self.cur.lastrowid,
                 "jug1": jug1[0],
                 "jug2": jug2[0],
+                "jug1_name": jug1[1],
+                "jug2_name": jug2[1],
                 "sets_1": sets_1,
                 "sets_2": sets_2,
                 "old_rating1": jug1[2],
@@ -406,9 +408,22 @@ class App(ttk.Window):
         elif next_action["action"] == "add_match":
             try:
                 self.cur.execute('''
+                    SELECT PlayerId
+                    FROM Player
+                    WHERE Name = ?
+                ''', (next_action["jug1_name"],))
+                jug1 = self.cur.fetchone()[0]
+                self.cur.execute('''
+                    SELECT PlayerId
+                    FROM Player
+                    WHERE Name = ?
+                ''', (next_action["jug2_name"],))
+                jug2 = self.cur.fetchone()[0]
+
+                self.cur.execute('''
                     INSERT INTO Match (Player1Id, Player1Rating, Player2Id, Player2Rating, Player1Score, Player2Score, Date)
                     VALUES (?, ?, ?, ?, ?, ?, ?)
-                ''', (next_action["jug1"], next_action["old_rating1"], next_action["jug2"], next_action["old_rating2"],
+                ''', (jug1, next_action["old_rating1"], jug2, next_action["old_rating2"],
                       next_action["sets_1"], next_action["sets_2"], next_action["time"]))
                 self.cur.execute('''
                     UPDATE Player
@@ -417,11 +432,12 @@ class App(ttk.Window):
                         WHEN ? THEN ?
                         ELSE Rating
                     END
-                ''', (next_action["jug1"], next_action["new_rating1"], next_action["jug2"], next_action["new_rating2"]))
+                ''', (jug1, next_action["new_rating1"], jug2, next_action["new_rating2"]))
                 self.conn.commit()
                 self.actions[self.actions_index + 1]["match"] = self.cur.lastrowid
 
             except sql.Error as e:
+                print(e.with_traceback())
                 print(e)
 
 
