@@ -26,7 +26,7 @@ class ActionMenu(ttk.Frame):
         self.redo_img = tk.PhotoImage(file='images/icons8-redo-30.png')
         self.btn_redo = ttk.Button(self,
                                    image=self.redo_img,  
-                                   command=lambda: print("Hola"),
+                                   command=self.callbacks[1],
                                    bootstyle="link")
         self.btn_redo.grid(row=1, column=0, padx=0, pady=0, sticky="N")
         ToolTip(self.btn_redo, text="Rehacer")

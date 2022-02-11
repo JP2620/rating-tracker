@@ -37,33 +37,46 @@ class App(ttk.Window):
         self.cur = self.conn.cursor()
         self.create_widgets()
         self.actions = []
+        self.actions_index = -1
         return
-    
-
 
     def set_icon(self, icon_path: str) -> None:
         self.iconphoto(False, tk.PhotoImage(file=icon_path))
         return
 
     def create_widgets(self) -> None:
-        self.player_form = PlayerForm(self, callback=self.callback_add_player,
+        self.player_form = PlayerForm(self, callback=lambda: self.callback_add_player
+                                      (
+                                          self.player_form.get_player(),
+                                          self.player_form.get_rating()
+                                      ),
                                       text="Agregar jugador")
         self.match_form = MatchForm(self, text="Agregar resultado",
                                     callbacks=[
-                                        self.callback_add_match,
+                                        lambda: self.callback_add_match(
+                                            self.match_form.get_player_1(),
+                                            self.match_form.get_player_2(),
+                                            self.match_form.get_sets_1(),
+                                            self.match_form.get_sets_2(),
+                                            self.match_form.get_modalidad()
+                                        ),
                                         self.callback_show_deltas
                                     ])
         self.data_view = DataView(self)
         self.btns_frame = ActionMenu(self,
                                      callbacks=[
-                                         self.callback_undo
+                                         self.callback_undo,
+                                         self.callback_redo
                                      ])
 
-        self.match_form.grid(row=0, column=0, sticky="EW", padx=(20, 0), pady=10)
-        self.player_form.grid(row=1, column=0, sticky="EW", padx=(20, 0), pady=10)
-        self.data_view.grid(row=2, column=0, sticky="EW", padx=(20, 0), pady=10)
-        self.btns_frame.grid(row=0, column=1, rowspan=3, padx=5, pady=10, sticky="N")
-
+        self.match_form.grid(row=0, column=0, sticky="EW",
+                             padx=(20, 0), pady=10)
+        self.player_form.grid(
+            row=1, column=0, sticky="EW", padx=(20, 0), pady=10)
+        self.data_view.grid(row=2, column=0, sticky="EW",
+                            padx=(20, 0), pady=10)
+        self.btns_frame.grid(row=0, column=1, rowspan=3,
+                             padx=5, pady=10, sticky="N")
 
         self.match_form.update_player_opt(self.get_players())
         self.data_view.update_matches(self.get_matches())
@@ -105,24 +118,27 @@ class App(ttk.Window):
         self.cur.close()
         return conn
 
-    def callback_add_player(self) -> None:
+    def callback_add_player(self, jug: str, rating: int) -> None:
         try:
             self.cur = self.conn.cursor()
             self.cur.execute('''
           INSERT INTO Player (Name, Rating)
           VALUES (?, ?)
-          ''', (self.player_form.get_player().upper(), self.player_form.get_rating()))
+          ''', (jug.upper(), int(rating)))
             self.conn.commit()
         except sql.Error as e:
             print(e)
-            Messagebox.show_info(message="Fallo al agregar jugador", title="Error")
+            Messagebox.show_info(
+                message="Fallo al agregar jugador", title="Error")
             return
         self.actions.append(
             {
                 "action": "add_player",
-                "player": self.cur.lastrowid
+                "player": jug.upper(),
+                "rating": int(rating)
             }
         )
+        self.actions_index += 1
         self.data_view.update_standings(self.get_standings())
 
         try:
@@ -215,12 +231,7 @@ class App(ttk.Window):
             "+" + str(deltas[1][0]) + "/" + str(deltas[1][1]))
         return
 
-    def callback_add_match(self) -> None:
-        jug1 = self.match_form.get_player_1()
-        jug2 = self.match_form.get_player_2()
-        sets_1 = self.match_form.get_sets_1()
-        sets_2 = self.match_form.get_sets_2()
-        modalidad = self.match_form.get_modalidad()
+    def callback_add_match(self, jug1: str, jug2: str, sets_1: int, sets_2: int, modalidad: int) -> None:
         players = self.get_players()
 
         max_sets = modalidad // 2 + 1
@@ -284,9 +295,16 @@ class App(ttk.Window):
         self.actions.append(
             {
                 "action": "add_match",
-                "match": self.cur.lastrowid
+                "jug1": jug1[1],
+                "jug2": jug2[1],
+                "sets_1": sets_1,
+                "sets_2": sets_2,
+                "rating1": jug1[2],
+                "rating2": jug2[2],
+                "time": time
             }
         )
+        self.actions_index += 1
         return
 
     def get_matches(self) -> List:
@@ -319,9 +337,12 @@ class App(ttk.Window):
         matches = self.cur.fetchall()
         matches.reverse()   # Most recent first
         return matches
-    
+
     def callback_undo(self) -> None:
-        last_action = self.actions.pop()
+        if self.actions_index < 0:
+            return
+        last_action = self.actions[self.actions_index]
+        print(last_action)
         if last_action["action"] == "add_match":
             try:
                 self.cur.execute('''
@@ -345,7 +366,7 @@ class App(ttk.Window):
                     DELETE FROM Match
                     WHERE MatchId = ?
                 ''', (last_action["match"],))
-            except sqlite3.Error as e:
+            except sql as e:
                 print(e)
             except Exception as e:
                 print(e)
@@ -360,8 +381,21 @@ class App(ttk.Window):
                 print(e)
             except Exception as e:
                 print(e)
-                
-        self.conn.commit()        
+
+        self.conn.commit()
         self.data_view.update_standings(self.get_standings())
-        self.data_view.update_matches(self.get_matches())        
+        self.data_view.update_matches(self.get_matches())
+        self.actions_index -= 1
+        return
+
+    def callback_redo(self) -> None:
+        if self.actions_index >= len(self.actions) - 1:
+            return
+        next_action = self.actions[self.actions_index + 1]
+        print(next_action)
+
+        self.conn.commit()
+        self.data_view.update_standings(self.get_standings())
+        self.data_view.update_matches(self.get_matches())
+        self.actions_index += 1
         return
