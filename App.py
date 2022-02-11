@@ -36,6 +36,7 @@ class App(ttk.Window):
         self.conn = self.create_database()
         self.cur = self.conn.cursor()
         self.create_widgets()
+        self.actions = []
         return
     
 
@@ -53,7 +54,10 @@ class App(ttk.Window):
                                         self.callback_show_deltas
                                     ])
         self.data_view = DataView(self)
-        self.btns_frame = ActionMenu(self)
+        self.btns_frame = ActionMenu(self,
+                                     callbacks=[
+                                         self.callback_undo
+                                     ])
 
         self.match_form.grid(row=0, column=0, sticky="EW", padx=(20, 0), pady=10)
         self.player_form.grid(row=1, column=0, sticky="EW", padx=(20, 0), pady=10)
@@ -113,6 +117,12 @@ class App(ttk.Window):
             print(e)
             Messagebox.show_info(message="Fallo al agregar jugador", title="Error")
             return
+        self.actions.append(
+            {
+                "action": "add_player",
+                "player": self.cur.lastrowid
+            }
+        )
         self.data_view.update_standings(self.get_standings())
 
         try:
@@ -180,7 +190,6 @@ class App(ttk.Window):
         ''')
         standings = self.cur.fetchall()
         return standings
-
 
     def callback_show_deltas(self) -> None:
         jug1 = self.match_form.get_player_1()
@@ -272,6 +281,12 @@ class App(ttk.Window):
         self.conn.commit()
         self.data_view.update_standings(self.get_standings())
         self.data_view.update_matches(self.get_matches())
+        self.actions.append(
+            {
+                "action": "add_match",
+                "match": self.cur.lastrowid
+            }
+        )
         return
 
     def get_matches(self) -> List:
@@ -304,3 +319,49 @@ class App(ttk.Window):
         matches = self.cur.fetchall()
         matches.reverse()   # Most recent first
         return matches
+    
+    def callback_undo(self) -> None:
+        last_action = self.actions.pop()
+        if last_action["action"] == "add_match":
+            try:
+                self.cur.execute('''
+                    SELECT Player1Id, Player1Rating, Player2Id, Player2Rating
+                    FROM Match
+                    WHERE MatchId = ?
+                ''', (last_action["match"],))
+
+                old_ratings = self.cur.fetchone()
+
+                self.cur.execute('''
+                    UPDATE Player
+                    SET Rating = CASE PlayerId
+                        WHEN ? THEN ?
+                        WHEN ? THEN ?
+                        ELSE Rating
+                    END
+                ''', (old_ratings[0], old_ratings[1], old_ratings[2], old_ratings[3]))
+
+                self.cur.execute('''
+                    DELETE FROM Match
+                    WHERE MatchId = ?
+                ''', (last_action["match"],))
+            except sqlite3.Error as e:
+                print(e)
+            except Exception as e:
+                print(e)
+        elif last_action["action"] == "add_player":
+            print(last_action["player"])
+            try:
+                self.cur.execute('''
+                    DELETE FROM Player
+                    WHERE PlayerId = ?
+                ''', (last_action["player"],))
+            except sql.Error as e:
+                print(e)
+            except Exception as e:
+                print(e)
+                
+        self.conn.commit()        
+        self.data_view.update_standings(self.get_standings())
+        self.data_view.update_matches(self.get_matches())        
+        return
