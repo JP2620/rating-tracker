@@ -32,6 +32,8 @@ class App(ttk.Window):
         self.conn = self.create_database()
         self.cur = self.conn.cursor()
         self.create_widgets()
+        return
+    
 
 
     def set_icon(self, icon_path: str) -> None:
@@ -48,13 +50,15 @@ class App(ttk.Window):
                                     ])
         self.data_view = DataView(self)
 
-        self.match_form.grid(row=0, column=0, sticky="EW")
-        self.player_form.grid(row=1, column=0, sticky="EW")
-        self.data_view.grid(row=2, column=0, sticky="EW")
+        self.match_form.grid(row=0, column=0, sticky="EW", padx=20, pady=10)
+        self.player_form.grid(row=1, column=0, sticky="EW", padx=20, pady=10)
+        self.data_view.grid(row=2, column=0, sticky="EW", padx=20, pady=10)
 
         self.match_form.update_player_opt(self.get_players())
         self.data_view.update_matches(self.get_matches())
         self.data_view.update_standings(self.get_standings())
+
+        return
 
     def create_database(self) -> sql.Connection:
         conn = None
