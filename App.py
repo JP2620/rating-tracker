@@ -79,7 +79,7 @@ class App(ttk.Window):
         self.data_view.grid(row=2, column=0, sticky="EW",
                             padx=(70, 0), pady=10)
         self.btns_frame.grid(row=0, column=1, rowspan=3,
-                             padx=5, pady=10, sticky="N")
+                             padx=5, pady=10, sticky="NS")
 
         self.match_form.update_player_opt(self.get_players())
         self.data_view.update_matches(self.get_matches())
@@ -90,7 +90,7 @@ class App(ttk.Window):
     def create_database(self) -> sql.Connection:
         conn = None
         try:
-            conn = sql.connect('torneo.db')
+            conn = sql.connect('liga.db')
             self.cur = conn.cursor()
         except Error as e:
             print(e)
