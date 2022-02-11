@@ -1,6 +1,7 @@
 from PlayerForm import PlayerForm
 from MatchForm import MatchForm
 from DataView import DataView
+from ActionMenu import ActionMenu
 from typing import List
 from datetime import datetime
 import tkinter as tk
@@ -8,6 +9,7 @@ import sqlite3 as sql
 import ttkbootstrap as ttk
 from ttkbootstrap.dialogs import Messagebox
 from ttkbootstrap.constants import *
+from ttkbootstrap.tooltip import ToolTip
 import json
 
 
@@ -51,10 +53,13 @@ class App(ttk.Window):
                                         self.callback_show_deltas
                                     ])
         self.data_view = DataView(self)
+        self.btns_frame = ActionMenu(self)
 
-        self.match_form.grid(row=0, column=0, sticky="EW", padx=20, pady=10)
-        self.player_form.grid(row=1, column=0, sticky="EW", padx=20, pady=10)
-        self.data_view.grid(row=2, column=0, sticky="EW", padx=20, pady=10)
+        self.match_form.grid(row=0, column=0, sticky="EW", padx=(20, 0), pady=10)
+        self.player_form.grid(row=1, column=0, sticky="EW", padx=(20, 0), pady=10)
+        self.data_view.grid(row=2, column=0, sticky="EW", padx=(20, 0), pady=10)
+        self.btns_frame.grid(row=0, column=1, rowspan=3, padx=5, pady=10, sticky="N")
+
 
         self.match_form.update_player_opt(self.get_players())
         self.data_view.update_matches(self.get_matches())
