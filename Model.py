@@ -1,5 +1,6 @@
 import sqlite3 as sql
 from typing import List
+from constants import *
 
 
 class Model():
@@ -91,3 +92,40 @@ class Model():
         matches = self.cur.fetchall()
         matches.reverse()   # Most recent first
         return matches
+
+    def get_deltas(self, rating_jug_1: int, rating_jug_2: int, sets_a_jugar: int) -> List[tuple]:
+        """
+          retorna dos tuplas con los delta de victoria/derrota de cada
+          jugador
+        """
+        mejor = 0
+        peor = 0
+        if rating_jug_1 >= rating_jug_2:
+            mejor = rating_jug_1
+            peor = rating_jug_2
+        else:
+            mejor = rating_jug_2
+            peor = rating_jug_1
+
+        diff = mejor - peor
+
+        # Quiero el indice del numero mas grande de los menores/iguales a diff
+        indice = -1
+        for item in DIFF_RATINGS:
+            if diff >= item:
+                indice = DIFF_RATINGS.index(item)
+                break
+
+        # Ajusta delta segun modalidad
+        modalidad = "Mejor de " + str(sets_a_jugar)
+        PTS_GANA_MEJOR_aux = [int(puntaje * MULTIPLICADORES[modalidad])
+                              for puntaje in PTS_GANA_MEJOR]
+        PTS_GANA_PEOR_aux = [int(puntaje * MULTIPLICADORES[modalidad])
+                             for puntaje in PTS_GANA_PEOR]
+
+        if (mejor == rating_jug_1):
+            return [(PTS_GANA_MEJOR_aux[indice], -PTS_GANA_PEOR_aux[indice]),
+                    (PTS_GANA_PEOR_aux[indice], -PTS_GANA_MEJOR_aux[indice])]
+        else:
+            return [(PTS_GANA_PEOR_aux[indice], -PTS_GANA_MEJOR_aux[indice]),
+                    (PTS_GANA_MEJOR_aux[indice], -PTS_GANA_PEOR_aux[indice])]

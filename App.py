@@ -13,26 +13,15 @@ import ttkbootstrap as ttk
 from ttkbootstrap.dialogs import Messagebox
 from ttkbootstrap.constants import *
 from ttkbootstrap.tooltip import ToolTip
-import json
+from constants import *
+
 
 
 class App(ttk.Window):
     def __init__(self, master=None, **kwargs):
         super().__init__(master, **kwargs)
-        try:
-            with open('conf.json', 'r') as f:
-                config = json.load(f)
-        except Exception as e:
-            print(e)
-            exit()
-        self.geometry(
-            str(config["resolution"]["width"]) + "x" +
-            str(config["resolution"]["height"])
-        )
-        self.MULTIPLICADORES = config["multipliers"]
-        self.DIFF_RATINGS = config["rating_deltas"]
-        self.PTS_GANA_MEJOR = config["points_better_wins"]
-        self.PTS_GANA_PEOR = config["points_worse_wins"]
+
+        self.geometry(str(W_WIDTH) + "x" + str(W_HEIGHT))
         self.model = Model()
         self.conn = self.model.create_database()
         self.cur = self.conn.cursor()
@@ -121,43 +110,6 @@ class App(ttk.Window):
             pass
         return
 
-    def get_deltas(self, rating_jug_1: int, rating_jug_2: int, sets_a_jugar: int) -> List[tuple]:
-        """
-          retorna dos tuplas con los delta de victoria/derrota de cada
-          jugador
-        """
-        mejor = 0
-        peor = 0
-        if rating_jug_1 >= rating_jug_2:
-            mejor = rating_jug_1
-            peor = rating_jug_2
-        else:
-            mejor = rating_jug_2
-            peor = rating_jug_1
-
-        diff = mejor - peor
-
-        # Quiero el indice del numero mas grande de los menores/iguales a diff
-        indice = -1
-        for item in self.DIFF_RATINGS:
-            if diff >= item:
-                indice = self.DIFF_RATINGS.index(item)
-                break
-
-        # Ajusta delta segun modalidad
-        modalidad = "Mejor de " + str(sets_a_jugar)
-        PTS_GANA_MEJOR_aux = [int(puntaje * self.MULTIPLICADORES[modalidad])
-                              for puntaje in self.PTS_GANA_MEJOR]
-        PTS_GANA_PEOR_aux = [int(puntaje * self.MULTIPLICADORES[modalidad])
-                             for puntaje in self.PTS_GANA_PEOR]
-
-        if (mejor == rating_jug_1):
-            return [(PTS_GANA_MEJOR_aux[indice], -PTS_GANA_PEOR_aux[indice]),
-                    (PTS_GANA_PEOR_aux[indice], -PTS_GANA_MEJOR_aux[indice])]
-        else:
-            return [(PTS_GANA_PEOR_aux[indice], -PTS_GANA_MEJOR_aux[indice]),
-                    (PTS_GANA_MEJOR_aux[indice], -PTS_GANA_PEOR_aux[indice])]
-
     def callback_show_deltas(self) -> None:
         jug1 = self.match_form.get_player_1()
         jug2 = self.match_form.get_player_2()
@@ -171,10 +123,10 @@ class App(ttk.Window):
             return
         deltas = None
         if players[0][0] == jug1:
-            deltas = self.get_deltas(players[0][1], players[1][1],
+            deltas = self.model.get_deltas(players[0][1], players[1][1],
                                      self.match_form.get_modalidad())
         else:
-            deltas = self.get_deltas(players[1][1], players[0][1],
+            deltas = self.model.get_deltas(players[1][1], players[0][1],
                                      self.match_form.get_modalidad())
 
         self.match_form.set_deltas(
@@ -219,7 +171,7 @@ class App(ttk.Window):
         ''', (jug1[0], jug2[0], jug1[2], jug2[2], sets_1,
               sets_2, time))
 
-        deltas = self.get_deltas(jug1[2], jug2[2], modalidad)
+        deltas = self.model.get_deltas(jug1[2], jug2[2], modalidad)
         new_rating1 = None
         new_rating2 = None
         if (sets_1 > sets_2):
