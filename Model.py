@@ -1,4 +1,5 @@
 import sqlite3 as sql
+import pandas as pd
 from typing import List
 from constants import *
 
@@ -39,20 +40,23 @@ class Model():
         self.conn.commit()
         return self.conn
 
-    def get_players(self) -> List:
+    def get_players(self) -> pd.DataFrame:
         try:
-            self.cur.execute(
+            query = pd.read_sql_query(
                 '''
-                SELECT Name FROM Player
-                '''
-            )
+                SELECT PlayerId, Name, Rating
+                FROM Player
+                ORDER BY Rating DESC
+                ''', self.conn
+            ) 
+            df = pd.DataFrame(query, columns=['PlayerId', 'Name', 'Rating'])
         except sql.Error as e:
             print(e)
             raise e
         except Exception as e:
             print(e)
             raise e
-        return [x[0] for x in self.cur.fetchall()]
+        return df
 
     def get_standings(self) -> List:
         self.cur.execute('''

@@ -73,7 +73,7 @@ class App(ttk.Window):
         self.btns_frame.grid(row=0, column=1, rowspan=3,
                              padx=5, pady=10, sticky="NS")
 
-        self.match_form.update_player_opt(self.model.get_players())
+        self.match_form.update_player_opt(list(self.model.get_players()["Name"]))
         self.data_view.update_matches(self.model.get_matches())
         self.data_view.update_standings(self.model.get_standings())
 
@@ -105,7 +105,7 @@ class App(ttk.Window):
         self.data_view.update_standings(self.model.get_standings())
 
         try:
-            self.match_form.update_player_opt(self.model.get_players())
+            self.match_form.update_player_opt(list(self.model.get_players()["Name"]))
         except:
             pass
         return
@@ -113,11 +113,11 @@ class App(ttk.Window):
     def callback_show_deltas(self) -> None:
         jug1 = self.match_form.get_player_1()
         jug2 = self.match_form.get_player_2()
-        self.cur.execute('''
-          SELECT Name, Rating FROM Player
-          WHERE Name = ? OR Name = ?
-          ''', (jug1, jug2))
-        players = self.cur.fetchall()
+
+        players = self.model.get_players()[["Name", "Rating"]]
+        players = players.loc[players["Name"].isin([jug1, jug2])]
+        players = players.values.tolist()
+        
         if len(players) != 2:
             print("Error: jugadores no encontrados")
             return
@@ -135,7 +135,7 @@ class App(ttk.Window):
         return
 
     def callback_add_match(self, jug1: str, jug2: str, sets_1: int, sets_2: int, modalidad: int) -> None:
-        players = self.model.get_players()
+        players = list(self.model.get_players()["Name"])
 
         max_sets = modalidad // 2 + 1
         error_msg = ""
