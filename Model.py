@@ -10,7 +10,7 @@ class Model():
             self.conn = sql.connect('liga.db')
             self.cur = self.conn.cursor()
         except sql.Error as e:
-            print(e)
+            print(e.with_traceback())
             exit()
         return
 
@@ -51,10 +51,10 @@ class Model():
             )
             df = pd.DataFrame(query, columns=['PlayerId', 'Name', 'Rating'])
         except sql.Error as e:
-            print(e)
+            print(e.with_traceback())
             raise e
         except Exception as e:
-            print(e)
+            print(e.with_traceback())
             raise e
         return df
 
@@ -166,6 +166,44 @@ class Model():
                     update_str += ", "
             update_str += " WHERE PlayerId = " + str(player_id)
             self.cur.execute(update_str)
+            self.conn.commit()
+        except sql.Error as e:
+            raise e
+        return
+
+    def undo_match(self, match_id: int) -> None:
+        try:
+            self.cur.execute('''
+                    SELECT Player1Id, Player1Rating, Player2Id, Player2Rating
+                    FROM Match
+                    WHERE MatchId = ?
+                ''', (match_id,))
+            old_ratings = self.cur.fetchone()
+            self.update_player(["Rating"], [old_ratings[1]], old_ratings[0])
+            self.update_player(["Rating"], [old_ratings[3]], old_ratings[2])
+            self.delete_match(match_id)
+            self.conn.commit()
+        except sql.Error as e:
+            raise e
+        return
+    
+    def delete_match(self, match_id: int) -> None:
+        try:
+            self.cur.execute('''
+                    DELETE FROM Match
+                    WHERE MatchId = ?
+                ''', (match_id,))
+            self.conn.commit()
+        except sql.Error as e:
+            raise e
+        return
+    
+    def delete_player(self, name:str) -> None:
+        try:
+            self.cur.execute('''
+                    DELETE FROM Player
+                    WHERE Name = ?
+                ''', (name,))
             self.conn.commit()
         except sql.Error as e:
             raise e

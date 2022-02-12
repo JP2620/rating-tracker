@@ -22,8 +22,6 @@ class App(ttk.Window):
 
         self.geometry(str(W_WIDTH) + "x" + str(W_HEIGHT))
         self.model = Model()
-        self.conn = self.model.create_database()
-        self.cur = self.conn.cursor()
         self.resizable(False, False)
         self.title("Rating Tracker")
         self.set_icon('images/Table-Tennis-1.png')
@@ -83,7 +81,7 @@ class App(ttk.Window):
         try:
             self.model.add_player(jug, rating)
         except sql.Error as e:
-            print(e)
+            print(e.with_traceback())
             Messagebox.show_info(
                 message="Fallo al agregar jugador", title="Error")
             return
@@ -103,7 +101,7 @@ class App(ttk.Window):
             self.match_form.update_player_opt(
                 list(self.model.get_players()["Name"]))
         except Exception as e:
-            print(e)
+            print(e.with_traceback())
             pass
         return
 
@@ -156,7 +154,7 @@ class App(ttk.Window):
         try:
             players = self.model.get_players()[["PlayerId", "Name", "Rating"]]
         except sql.Error as e:
-            print(e)
+            print(e.with_traceback())
             return
 
         players = players.loc[players["Name"].isin([jug1, jug2])]
@@ -169,19 +167,19 @@ class App(ttk.Window):
             match_id = self.model.add_match(
                 jug1[0], jug2[0], jug1[2], jug2[2], sets_1, sets_2, time)
         except sql.Error as e:
-            print(e)
+            print(e.with_traceback())
             return
 
         deltas = self.model.get_deltas(jug1[2], jug2[2], modalidad)
         new_rating1, new_rating2 = (jug1[2] + deltas[0][0], jug2[2] + deltas[1][1]) \
             if sets_1 > sets_2 \
             else (jug1[2] + deltas[0][1], jug2[2] + deltas[1][0])
-        
+
         try:
             self.model.update_player(["Rating"], [new_rating1], jug1[0])
             self.model.update_player(["Rating"], [new_rating2], jug2[0])
         except sql.Error as e:
-            print(e)
+            print(e.with_traceback())
             return
 
         self.data_view.update_standings(self.model.get_standings())
@@ -205,51 +203,20 @@ class App(ttk.Window):
             }
         )
         self.actions_index += 1
-        return 
+        return
 
     def callback_undo(self) -> None:
         if self.actions_index < 0:
             return
         last_action = self.actions[self.actions_index]
-        if last_action["action"] == "add_match":
-            try:
-                self.cur.execute('''
-                    SELECT Player1Id, Player1Rating, Player2Id, Player2Rating
-                    FROM Match
-                    WHERE MatchId = ?
-                ''', (last_action["match"],))
-
-                old_ratings = self.cur.fetchone()
-
-                self.cur.execute('''
-                    UPDATE Player
-                    SET Rating = CASE PlayerId
-                        WHEN ? THEN ?
-                        WHEN ? THEN ?
-                        ELSE Rating
-                    END
-                ''', (old_ratings[0], old_ratings[1], old_ratings[2], old_ratings[3]))
-
-                self.cur.execute('''
-                    DELETE FROM Match
-                    WHERE MatchId = ?
-                ''', (last_action["match"],))
-            except sql as e:
-                print(e)
-            except Exception as e:
-                print(e)
-        elif last_action["action"] == "add_player":
-            try:
-                self.cur.execute('''
-                    DELETE FROM Player
-                    WHERE Name = ?
-                ''', (last_action["player"],))
-            except sql.Error as e:
-                print(e)
-            except Exception as e:
-                print(e)
-
-        self.conn.commit()
+        try:
+            if last_action["action"] == "add_match":
+                self.model.undo_match(match_id=last_action["match"])
+            elif last_action["action"] == "add_player":
+                self.model.delete_player(last_action["player"])
+        except sql.Error as e:
+            print(e.with_traceback())
+            return
         self.data_view.update_standings(self.model.get_standings())
         self.data_view.update_matches(self.model.get_matches())
         self.actions_index -= 1
@@ -260,47 +227,23 @@ class App(ttk.Window):
             return
         next_action = self.actions[self.actions_index + 1]
 
-        if next_action["action"] == "add_player":
-            self.cur.execute('''
-                INSERT INTO Player (Name, Rating)
-                VALUES (?, ?)
-            ''', (next_action["player"], next_action["rating"]))
-            self.conn.commit()
-        elif next_action["action"] == "add_match":
-            try:
-                self.cur.execute('''
-                    SELECT PlayerId
-                    FROM Player
-                    WHERE Name = ?
-                ''', (next_action["jug1_name"],))
-                jug1 = self.cur.fetchone()[0]
-                self.cur.execute('''
-                    SELECT PlayerId
-                    FROM Player
-                    WHERE Name = ?
-                ''', (next_action["jug2_name"],))
-                jug2 = self.cur.fetchone()[0]
-
-                self.cur.execute('''
-                    INSERT INTO Match (Player1Id, Player1Rating, Player2Id, Player2Rating, Player1Score, Player2Score, Date)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
-                ''', (jug1, next_action["old_rating1"], jug2, next_action["old_rating2"],
-                      next_action["sets_1"], next_action["sets_2"], next_action["time"]))
-                self.cur.execute('''
-                    UPDATE Player
-                    SET Rating = CASE PlayerId
-                        WHEN ? THEN ?
-                        WHEN ? THEN ?
-                        ELSE Rating
-                    END
-                ''', (jug1, next_action["new_rating1"], jug2, next_action["new_rating2"]))
-                self.conn.commit()
-                self.actions[self.actions_index +
-                             1]["match"] = self.cur.lastrowid
-
-            except sql.Error as e:
-                print(e.with_traceback())
-                print(e)
+        try:
+            if next_action["action"] == "add_player":
+                self.model.add_player(next_action["player"], next_action["rating"])
+            elif next_action["action"] == "add_match":
+                
+                match_id = self.model.add_match(next_action["jug1"],
+                                                next_action["jug2"], next_action["old_rating1"],
+                                                next_action["old_rating2"], next_action["sets_1"],
+                                                next_action["sets_2"], next_action["time"])
+                self.model.update_player(
+                    ["Rating"], [next_action["new_rating1"]], next_action["jug1"])
+                self.model.update_player(
+                    ["Rating"], [next_action["new_rating2"]], next_action["jug2"])
+                self.actions[self.actions_index + 1]["match"] = match_id
+        except sql.Error as e:
+            print(e.with_traceback())
+            return
 
         self.data_view.update_standings(self.model.get_standings())
         self.data_view.update_matches(self.model.get_matches())
@@ -312,13 +255,9 @@ class App(ttk.Window):
 
         ws = wb.create_sheet("Posiciones")
         ws.append(["Jugador", "Rating"])
-        self.cur.execute('''
-            SELECT Name, Rating
-            FROM Player
-            ORDER BY Rating DESC
-        ''')
-        for row in self.cur.fetchall():
-            ws.append(row)
+        players = self.model.get_players()[["Name", "Rating"]].values.tolist()
+        for player in players:
+            ws.append(player)
 
         ws = wb.create_sheet("Partidos")
         ws.append(["Jugador 1", "Resultado", "Jugador 2"])

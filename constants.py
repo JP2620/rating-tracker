@@ -4,7 +4,7 @@ try:
     with open('conf.json', 'r') as f:
         config = json.load(f)
 except Exception as e:
-    print(e)
+    print(e.with_traceback())
     exit()
 
 W_WIDTH = config["resolution"]["width"]
