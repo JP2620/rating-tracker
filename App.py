@@ -2,6 +2,7 @@ from PlayerForm import PlayerForm
 from MatchForm import MatchForm
 from DataView import DataView
 from ActionMenu import ActionMenu
+from Model import Model
 from typing import List
 from datetime import datetime
 import tkinter as tk
@@ -32,11 +33,13 @@ class App(ttk.Window):
         self.DIFF_RATINGS = config["rating_deltas"]
         self.PTS_GANA_MEJOR = config["points_better_wins"]
         self.PTS_GANA_PEOR = config["points_worse_wins"]
+        self.model = Model()
+        self.conn = self.model.create_database()
+        self.cur = self.conn.cursor()
         self.resizable(False, False)
         self.title("Rating Tracker")
         self.set_icon('images/Table-Tennis-1.png')
-        self.conn = self.create_database()
-        self.cur = self.conn.cursor()
+
         self.create_widgets()
         self.actions = []
         self.actions_index = -1
@@ -81,45 +84,11 @@ class App(ttk.Window):
         self.btns_frame.grid(row=0, column=1, rowspan=3,
                              padx=5, pady=10, sticky="NS")
 
-        self.match_form.update_player_opt(self.get_players())
-        self.data_view.update_matches(self.get_matches())
-        self.data_view.update_standings(self.get_standings())
+        self.match_form.update_player_opt(self.model.get_players())
+        self.data_view.update_matches(self.model.get_matches())
+        self.data_view.update_standings(self.model.get_standings())
 
         return
-
-    def create_database(self) -> sql.Connection:
-        conn = None
-        try:
-            conn = sql.connect('liga.db')
-            self.cur = conn.cursor()
-        except Error as e:
-            print(e)
-            exit()
-        self.cur.execute('''
-      CREATE TABLE IF NOT EXISTS Player (
-        PlayerId INTEGER PRIMARY KEY AUTOINCREMENT,
-        Name TEXT NOT NULL,
-        Rating INTEGER NOT NULL,
-        UNIQUE(Name)
-      ); '''
-                         )
-        self.cur.execute('''
-      CREATE TABLE IF NOT EXISTS Match (
-        MatchId INTEGER PRIMARY KEY AUTOINCREMENT,
-        Player1Id INTEGER NOT NULL,
-        Player2Id INTEGER NOT NULL,
-        Player1Rating INTEGER NOT NULL,
-        Player2Rating INTEGER NOT NULL,
-        Player1Score INTEGER NOT NULL,
-        Player2Score INTEGER NOT NULL,
-        Date TEXT,
-        FOREIGN KEY(Player1Id) REFERENCES Player(PlayerId),
-        FOREIGN KEY(Player2Id) REFERENCES Player(PlayerId)
-      ); '''
-                         )
-        conn.commit()
-        self.cur.close()
-        return conn
 
     def callback_add_player(self, jug: str, rating: int) -> None:
         try:
@@ -144,10 +113,10 @@ class App(ttk.Window):
             }
         )
         self.actions_index += 1
-        self.data_view.update_standings(self.get_standings())
+        self.data_view.update_standings(self.model.get_standings())
 
         try:
-            self.match_form.update_player_opt(self.get_players())
+            self.match_form.update_player_opt(self.model.get_players())
         except:
             pass
         return
@@ -189,29 +158,6 @@ class App(ttk.Window):
             return [(PTS_GANA_PEOR_aux[indice], -PTS_GANA_MEJOR_aux[indice]),
                     (PTS_GANA_MEJOR_aux[indice], -PTS_GANA_PEOR_aux[indice])]
 
-    def get_players(self) -> List[str]:
-        try:
-            self.cur.execute(
-                '''
-                SELECT Name FROM Player
-                '''
-            )
-        except sql.Error as e:
-            print(e)
-            raise e
-        except Exception as e:
-            print(e)
-            raise e
-        return [x[0] for x in self.cur.fetchall()]
-
-    def get_standings(self) -> List:
-        self.cur.execute('''
-        SELECT ROW_NUMBER() OVER(ORDER BY Rating DESC) AS Standing, Name, Rating
-        FROM Player
-        ''')
-        standings = self.cur.fetchall()
-        return standings
-
     def callback_show_deltas(self) -> None:
         jug1 = self.match_form.get_player_1()
         jug2 = self.match_form.get_player_2()
@@ -237,7 +183,7 @@ class App(ttk.Window):
         return
 
     def callback_add_match(self, jug1: str, jug2: str, sets_1: int, sets_2: int, modalidad: int) -> None:
-        players = self.get_players()
+        players = self.model.get_players()
 
         max_sets = modalidad // 2 + 1
         error_msg = ""
@@ -295,8 +241,8 @@ class App(ttk.Window):
         ''', (new_rating2, jug2[0]))
 
         self.conn.commit()
-        self.data_view.update_standings(self.get_standings())
-        self.data_view.update_matches(self.get_matches())
+        self.data_view.update_standings(self.model.get_standings())
+        self.data_view.update_matches(self.model.get_matches())
         self.actions = self.actions[:self.actions_index + 1]
         self.actions.append(
             {
@@ -317,37 +263,6 @@ class App(ttk.Window):
         )
         self.actions_index += 1
         return
-
-    def get_matches(self) -> List:
-        self.cur.execute('''
-        SELECT t2.JUG1, t2.SETS1 || " - " || t2.SETS2 AS RESULTADO, t2.JUG2
-        FROM
-        (
-        	(
-        	SELECT Match.MatchId, Player.Name as JUG1, Match.Player1Score AS SETS1  
-        	FROM 
-        	(
-        		Match JOIN Player
-        		ON Match.Player1Id = Player.PlayerId
-        	)
-        	)
-        	AS t0
-        	JOIN
-        	(
-        	SELECT Match.MatchId, Player.Name AS JUG2, Match.Player2Score AS SETS2
-        	FROM
-        	(
-        		Match JOIN Player
-        		ON Match.Player2Id = Player.PlayerId
-        	)
-        	)
-        	AS t1
-        	ON t0.MatchId = t1.MatchId
-        ) AS t2
-        ''')
-        matches = self.cur.fetchall()
-        matches.reverse()   # Most recent first
-        return matches
 
     def callback_undo(self) -> None:
         if self.actions_index < 0:
@@ -392,8 +307,8 @@ class App(ttk.Window):
                 print(e)
 
         self.conn.commit()
-        self.data_view.update_standings(self.get_standings())
-        self.data_view.update_matches(self.get_matches())
+        self.data_view.update_standings(self.model.get_standings())
+        self.data_view.update_matches(self.model.get_matches())
         self.actions_index -= 1
         return
 
@@ -444,8 +359,8 @@ class App(ttk.Window):
                 print(e)
 
 
-        self.data_view.update_standings(self.get_standings())
-        self.data_view.update_matches(self.get_matches())
+        self.data_view.update_standings(self.model.get_standings())
+        self.data_view.update_matches(self.model.get_matches())
         self.actions_index += 1
         return
     
@@ -464,7 +379,7 @@ class App(ttk.Window):
         
         ws = wb.create_sheet("Partidos")
         ws.append(["Jugador 1", "Resultado", "Jugador 2"])
-        for match in self.get_matches():
+        for match in self.model.get_matches():
             ws.append(match)
 
         del wb["Sheet"]        
