@@ -231,15 +231,22 @@ class App(ttk.Window):
             if next_action["action"] == "add_player":
                 self.model.add_player(next_action["player"], next_action["rating"])
             elif next_action["action"] == "add_match":
+                # We have and id that could be outdated if the players were deleted and re added
+                # so we need to get the new id
+                players = self.model.get_players()[["PlayerId", "Name"]]
+                players = players.loc[players["Name"].isin([next_action["jug1_name"], next_action["jug2_name"]])]
+                players = players.values.tolist()
+                id1, id2 = (players[0][0], players[1][0]) if players[0][1] == next_action["jug1_name"] \
+                    else (players[1][0], players[0][0])
                 
-                match_id = self.model.add_match(next_action["jug1"],
-                                                next_action["jug2"], next_action["old_rating1"],
+                match_id = self.model.add_match(id1,
+                                                id2, next_action["old_rating1"],
                                                 next_action["old_rating2"], next_action["sets_1"],
                                                 next_action["sets_2"], next_action["time"])
                 self.model.update_player(
-                    ["Rating"], [next_action["new_rating1"]], next_action["jug1"])
+                    ["Rating"], [next_action["new_rating1"]], id1)
                 self.model.update_player(
-                    ["Rating"], [next_action["new_rating2"]], next_action["jug2"])
+                    ["Rating"], [next_action["new_rating2"]], id2)
                 self.actions[self.actions_index + 1]["match"] = match_id
         except sql.Error as e:
             print(e.with_traceback())

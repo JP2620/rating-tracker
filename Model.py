@@ -9,6 +9,7 @@ class Model():
         try:
             self.conn = sql.connect('liga.db')
             self.cur = self.conn.cursor()
+            self.create_database()
         except sql.Error as e:
             print(e.with_traceback())
             exit()
