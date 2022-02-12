@@ -16,7 +16,6 @@ from ttkbootstrap.tooltip import ToolTip
 from constants import *
 
 
-
 class App(ttk.Window):
     def __init__(self, master=None, **kwargs):
         super().__init__(master, **kwargs)
@@ -41,8 +40,8 @@ class App(ttk.Window):
     def create_widgets(self) -> None:
         self.player_form = PlayerForm(self, callback=lambda: self.callback_add_player
                                       (
-                                          self.player_form.get_player(),
-                                          self.player_form.get_rating()
+                                          self.player_form.get_player().upper(),
+                                          int(self.player_form.get_rating())
                                       ),
                                       text="Agregar jugador")
         self.match_form = MatchForm(self, text="Agregar resultado",
@@ -73,7 +72,8 @@ class App(ttk.Window):
         self.btns_frame.grid(row=0, column=1, rowspan=3,
                              padx=5, pady=10, sticky="NS")
 
-        self.match_form.update_player_opt(list(self.model.get_players()["Name"]))
+        self.match_form.update_player_opt(
+            list(self.model.get_players()["Name"]))
         self.data_view.update_matches(self.model.get_matches())
         self.data_view.update_standings(self.model.get_standings())
 
@@ -81,12 +81,7 @@ class App(ttk.Window):
 
     def callback_add_player(self, jug: str, rating: int) -> None:
         try:
-            self.cur = self.conn.cursor()
-            self.cur.execute('''
-          INSERT INTO Player (Name, Rating)
-          VALUES (?, ?)
-          ''', (jug.upper(), int(rating)))
-            self.conn.commit()
+            self.model.add_player(jug, rating)
         except sql.Error as e:
             print(e)
             Messagebox.show_info(
@@ -97,16 +92,18 @@ class App(ttk.Window):
         self.actions.append(
             {
                 "action": "add_player",
-                "player": jug.upper(),
-                "rating": int(rating)
+                "player": jug,
+                "rating": rating
             }
         )
         self.actions_index += 1
         self.data_view.update_standings(self.model.get_standings())
 
         try:
-            self.match_form.update_player_opt(list(self.model.get_players()["Name"]))
-        except:
+            self.match_form.update_player_opt(
+                list(self.model.get_players()["Name"]))
+        except Exception as e:
+            print(e)
             pass
         return
 
@@ -117,17 +114,17 @@ class App(ttk.Window):
         players = self.model.get_players()[["Name", "Rating"]]
         players = players.loc[players["Name"].isin([jug1, jug2])]
         players = players.values.tolist()
-        
+
         if len(players) != 2:
             print("Error: jugadores no encontrados")
             return
         deltas = None
         if players[0][0] == jug1:
             deltas = self.model.get_deltas(players[0][1], players[1][1],
-                                     self.match_form.get_modalidad())
+                                           self.match_form.get_modalidad())
         else:
             deltas = self.model.get_deltas(players[1][1], players[0][1],
-                                     self.match_form.get_modalidad())
+                                           self.match_form.get_modalidad())
 
         self.match_form.set_deltas(
             "+" + str(deltas[0][0]) + "/" + str(deltas[0][1]),
@@ -155,51 +152,45 @@ class App(ttk.Window):
             Messagebox.show_info(title="Error", message=error_msg)
             return
 
-        self.cur.execute('''
-            SELECT PlayerId, Name, Rating FROM Player
-            WHERE Name = ? OR Name = ?
-            ''', (jug1, jug2))
-        players = self.cur.fetchall()
+        players = None
+        try:
+            players = self.model.get_players()[["PlayerId", "Name", "Rating"]]
+        except sql.Error as e:
+            print(e)
+            return
+
+        players = players.loc[players["Name"].isin([jug1, jug2])]
+        players = players.values.tolist()
         jug1, jug2 = (players[0], players[1]) if players[0][1] == jug1 \
             else (players[1], players[0])
-
         time = datetime.now()
-        self.cur.execute('''
-            INSERT INTO Match (Player1Id, Player2Id, Player1Rating,
-             Player2Rating, Player1Score, Player2Score, Date)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        ''', (jug1[0], jug2[0], jug1[2], jug2[2], sets_1,
-              sets_2, time))
+
+        try:
+            match_id = self.model.add_match(
+                jug1[0], jug2[0], jug1[2], jug2[2], sets_1, sets_2, time)
+        except sql.Error as e:
+            print(e)
+            return
 
         deltas = self.model.get_deltas(jug1[2], jug2[2], modalidad)
-        new_rating1 = None
-        new_rating2 = None
-        if (sets_1 > sets_2):
-            new_rating1 = jug1[2] + deltas[0][0]
-            new_rating2 = jug2[2] + deltas[1][1]
-        else:
-            new_rating1 = jug1[2] + deltas[0][1]
-            new_rating2 = jug2[2] + deltas[1][0]
+        new_rating1, new_rating2 = (jug1[2] + deltas[0][0], jug2[2] + deltas[1][1]) \
+            if sets_1 > sets_2 \
+            else (jug1[2] + deltas[0][1], jug2[2] + deltas[1][0])
+        
+        try:
+            self.model.update_player(["Rating"], [new_rating1], jug1[0])
+            self.model.update_player(["Rating"], [new_rating2], jug2[0])
+        except sql.Error as e:
+            print(e)
+            return
 
-        self.cur.execute('''
-            UPDATE Player
-            SET Rating = ?
-            WHERE PlayerId = ?
-        ''', (new_rating1, jug1[0]))
-        self.cur.execute('''
-            UPDATE Player
-            SET Rating = ?
-            WHERE PlayerId = ?
-        ''', (new_rating2, jug2[0]))
-
-        self.conn.commit()
         self.data_view.update_standings(self.model.get_standings())
         self.data_view.update_matches(self.model.get_matches())
         self.actions = self.actions[:self.actions_index + 1]
         self.actions.append(
             {
                 "action": "add_match",
-                "match": self.cur.lastrowid,
+                "match": match_id,
                 "jug1": jug1[0],
                 "jug2": jug2[0],
                 "jug1_name": jug1[1],
@@ -214,7 +205,7 @@ class App(ttk.Window):
             }
         )
         self.actions_index += 1
-        return
+        return 
 
     def callback_undo(self) -> None:
         if self.actions_index < 0:
@@ -304,18 +295,18 @@ class App(ttk.Window):
                     END
                 ''', (jug1, next_action["new_rating1"], jug2, next_action["new_rating2"]))
                 self.conn.commit()
-                self.actions[self.actions_index + 1]["match"] = self.cur.lastrowid
+                self.actions[self.actions_index +
+                             1]["match"] = self.cur.lastrowid
 
             except sql.Error as e:
                 print(e.with_traceback())
                 print(e)
 
-
         self.data_view.update_standings(self.model.get_standings())
         self.data_view.update_matches(self.model.get_matches())
         self.actions_index += 1
         return
-    
+
     def callback_export_excel(self) -> None:
         wb = openpyxl.Workbook()
 
@@ -328,13 +319,13 @@ class App(ttk.Window):
         ''')
         for row in self.cur.fetchall():
             ws.append(row)
-        
+
         ws = wb.create_sheet("Partidos")
         ws.append(["Jugador 1", "Resultado", "Jugador 2"])
         for match in self.model.get_matches():
             ws.append(match)
 
-        del wb["Sheet"]        
+        del wb["Sheet"]
         wb.save("liga.xlsx")
 
         return

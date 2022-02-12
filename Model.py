@@ -48,7 +48,7 @@ class Model():
                 FROM Player
                 ORDER BY Rating DESC
                 ''', self.conn
-            ) 
+            )
             df = pd.DataFrame(query, columns=['PlayerId', 'Name', 'Rating'])
         except sql.Error as e:
             print(e)
@@ -133,3 +133,40 @@ class Model():
         else:
             return [(PTS_GANA_PEOR_aux[indice], -PTS_GANA_MEJOR_aux[indice]),
                     (PTS_GANA_MEJOR_aux[indice], -PTS_GANA_PEOR_aux[indice])]
+
+    def add_player(self, name: str, rating: int) -> None:
+        try:
+            self.cur.execute('''
+            INSERT INTO Player (Name, Rating)
+            VALUES (?, ?)
+            ''', (name, rating))
+            self.conn.commit()
+        except sql.Error as e:
+            raise e
+        return
+
+    def add_match(self, p1_id: int, p2_id: int, p1_rating: int, p2_rating: int,
+                  p1_score: int, p2_score: int, date) -> int:
+        try:
+            self.cur.execute('''
+            INSERT INTO Match (Player1Id, Player2Id, Player1Rating, Player2Rating, Player1Score, Player2Score, Date)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''', (p1_id, p2_id, p1_rating, p2_rating, p1_score, p2_score, date))
+            self.conn.commit()
+        except sql.Error as e:
+            raise e
+        return self.cur.lastrowid
+
+    def update_player(self, fields: List[str], values: List, player_id: int) -> None:
+        try:
+            update_str = "UPDATE Player SET "
+            for i in range(len(fields)):
+                update_str += fields[i] + " = '" + str(values[i]) + "'"
+                if i < len(fields) - 1:
+                    update_str += ", "
+            update_str += " WHERE PlayerId = " + str(player_id)
+            self.cur.execute(update_str)
+            self.conn.commit()
+        except sql.Error as e:
+            raise e
+        return
