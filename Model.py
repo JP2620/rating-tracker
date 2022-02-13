@@ -238,7 +238,7 @@ class Model():
         df = pd.read_sql_query(sql_query.format(
             name, name), self.conn).values.tolist()
         for row in df:
-            if row[5] == "GASTON BRANDAN":
+            if row[5] == name:
                 row[0], row[5] = row[5], row[0]
                 row[1], row[4] = row[4], row[1]
                 row[2], row[3] = row[3], row[2]
