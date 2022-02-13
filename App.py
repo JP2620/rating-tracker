@@ -1,3 +1,11 @@
+from constants import *
+from ttkbootstrap.tooltip import ToolTip
+from ttkbootstrap.constants import *
+from ttkbootstrap.dialogs import Messagebox
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import numpy as np
+import matplotlib.pyplot as plt
 from PlayerForm import PlayerForm
 from MatchForm import MatchForm
 from DataView import DataView
@@ -10,10 +18,8 @@ import sqlite3 as sql
 import pandas as pd
 import openpyxl
 import ttkbootstrap as ttk
-from ttkbootstrap.dialogs import Messagebox
-from ttkbootstrap.constants import *
-from ttkbootstrap.tooltip import ToolTip
-from constants import *
+import matplotlib
+matplotlib.use('TkAgg')
 
 
 class App(ttk.Window):
@@ -58,7 +64,9 @@ class App(ttk.Window):
                                      callbacks=[
                                          self.callback_undo,
                                          self.callback_redo,
-                                         self.callback_export_excel
+                                         self.callback_export_excel,
+                                         lambda: self.callback_show_charts(
+                                             "GASTON BRANDAN")
                                      ])
 
         self.match_form.grid(row=0, column=0, sticky="EW",
@@ -234,17 +242,18 @@ class App(ttk.Window):
         try:
             if next_action["action"] == "add_player":
                 self.model.add_player(next_action["player"],
-                 next_action["rating"], next_action["id"])
+                                      next_action["rating"], next_action["id"])
                 self.model.save_changes()
             elif next_action["action"] == "add_match":
                 # We have and id that could be outdated if the players were deleted and re added
                 # so we need to get the new id
                 players = self.model.get_players()[["PlayerId", "Name"]]
-                players = players.loc[players["Name"].isin([next_action["jug1_name"], next_action["jug2_name"]])]
+                players = players.loc[players["Name"].isin(
+                    [next_action["jug1_name"], next_action["jug2_name"]])]
                 players = players.values.tolist()
                 id1, id2 = (players[0][0], players[1][0]) if players[0][1] == next_action["jug1_name"] \
                     else (players[1][0], players[0][0])
-                
+
                 match_id = self.model.add_match(id1,
                                                 id2, next_action["old_rating1"],
                                                 next_action["old_rating2"], next_action["sets_1"],
@@ -281,4 +290,28 @@ class App(ttk.Window):
         del wb["Sheet"]
         wb.save("liga.xlsx")
 
+        return
+
+    def callback_show_charts(self, jug: str) -> None:
+        newWindow = ttk.Toplevel(self)
+        newWindow.title("Charts")
+        newWindow.geometry("600x500")
+        df = self.model.get_player_history(jug)
+        fig = Figure(figsize=(5, 4), dpi=100)
+        ax1 = fig.add_subplot(111)
+        ax1.scatter([x for x in range(len(df["Rating 1"]))],
+                    df["Rating 1"])
+        ax1.set_xlabel('Partidos')
+        ax1.set_ylabel('Rating')
+        ax1.set_title('Rating vs Partidos')
+        ax1.legend([jug], loc='upper right')
+        ax1.grid(True)
+
+        canvas = FigureCanvasTkAgg(fig, master=newWindow)  # A tk.DrawingArea.
+        canvas.draw()
+
+        player = ttk.StringVar()
+        players_combobox = ttk.Combobox(newWindow, values=self.model.get_players()["Name"].values.tolist(), textvariable=player)
+        players_combobox.pack()
+        canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1, padx=20, pady=10)
         return

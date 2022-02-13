@@ -38,3 +38,12 @@ class ActionMenu(ttk.Frame):
                                 bootstyle="link")
         self.btn_export_excel.grid(row=2, column=0, padx=0, pady=0, sticky="N")
         ToolTip(self.btn_export_excel, text="Exportar a Excel")
+
+        self.charts_img = tk.PhotoImage(file='images/icons8-line-chart-30.png')
+        self.btn_charts = ttk.Button(self,
+                                image=self.charts_img,
+                                command=self.callbacks[3],
+                                bootstyle="link")
+        self.btn_charts.grid(row=3, column=0, padx=0, pady=0, sticky="N")
+        ToolTip(self.btn_charts, text="Ver gráficas")
+

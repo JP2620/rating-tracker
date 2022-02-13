@@ -152,7 +152,7 @@ class Model():
             self.cur.execute('''
             INSERT INTO Match (Player1Id, Player2Id, Player1Rating, Player2Rating, Player1Score, Player2Score, Date)
             VALUES (?, ?, ?, ?, ?, ?, ?)
-            ''', (p1_id, p2_id, p1_rating, p2_rating, p1_score, p2_score, date)) 
+            ''', (p1_id, p2_id, p1_rating, p2_rating, p1_score, p2_score, date))
         except sql.Error as e:
             raise e
         return self.cur.lastrowid
@@ -165,7 +165,7 @@ class Model():
                 if i < len(fields) - 1:
                     update_str += ", "
             update_str += " WHERE PlayerId = " + str(player_id)
-            self.cur.execute(update_str) 
+            self.cur.execute(update_str)
         except sql.Error as e:
             raise e
         return
@@ -184,7 +184,7 @@ class Model():
         except sql.Error as e:
             raise e
         return
-    
+
     def delete_match(self, match_id: int) -> None:
         try:
             self.cur.execute('''
@@ -194,8 +194,8 @@ class Model():
         except sql.Error as e:
             raise e
         return
-    
-    def delete_player(self, name:str) -> None:
+
+    def delete_player(self, name: str) -> None:
         try:
             self.cur.execute('''
                     DELETE FROM Player
@@ -204,10 +204,44 @@ class Model():
         except sql.Error as e:
             raise e
         return
-    
+
     def save_changes(self) -> None:
         try:
             self.conn.commit()
         except sql.Error as e:
             raise e
         return
+
+    def get_player_history(self, name: str) -> pd.DataFrame:
+        sql_query = """
+        SELECT
+          t0.Name AS NOMBRE_JUG_1,
+          Match.Player1Rating AS RATING_JUG_1,
+          Match.Player1Score AS SETS_JUG_1,
+          Match.Player2Score AS SETS_JUG_2,
+          Match.Player2Rating AS RATING_JUG_2,
+          t1.name2 AS NOMBRE_JUG_2
+        FROM
+          Match
+          JOIN Player AS t0 ON Match.Player1Id = t0.PlayerId
+          JOIN (
+            SELECT
+              Player.Name AS name2,
+              Player.PlayerId AS id2
+            FROM
+              Player
+          ) AS t1 ON Match.Player2Id = t1.id2
+        WHERE
+          t1.name2 = "{}"
+          OR t0.Name = "{}"
+        """
+        df = pd.read_sql_query(sql_query.format(
+            name, name), self.conn).values.tolist()
+        for row in df:
+            if row[5] == "GASTON BRANDAN":
+                row[0], row[5] = row[5], row[0]
+                row[1], row[4] = row[4], row[1]
+                row[2], row[3] = row[3], row[2]
+        df = pd.DataFrame(df, columns=["Jugador 1", "Rating 1", "Sets 1",
+                                       "Sets 2", "Rating 2", "Jugador 2"])
+        return df
