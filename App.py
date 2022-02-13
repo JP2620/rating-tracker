@@ -79,7 +79,8 @@ class App(ttk.Window):
 
     def callback_add_player(self, jug: str, rating: int) -> None:
         try:
-            self.model.add_player(jug, rating)
+            player_id = self.model.add_player(jug, rating)
+            self.model.save_changes()
         except sql.Error as e:
             print(e.with_traceback())
             Messagebox.show_info(
@@ -90,6 +91,7 @@ class App(ttk.Window):
         self.actions.append(
             {
                 "action": "add_player",
+                "id": player_id,
                 "player": jug,
                 "rating": rating
             }
@@ -178,6 +180,7 @@ class App(ttk.Window):
         try:
             self.model.update_player(["Rating"], [new_rating1], jug1[0])
             self.model.update_player(["Rating"], [new_rating2], jug2[0])
+            self.model.save_changes()
         except sql.Error as e:
             print(e.with_traceback())
             return
@@ -214,6 +217,7 @@ class App(ttk.Window):
                 self.model.undo_match(match_id=last_action["match"])
             elif last_action["action"] == "add_player":
                 self.model.delete_player(last_action["player"])
+            self.model.save_changes()
         except sql.Error as e:
             print(e.with_traceback())
             return
@@ -229,7 +233,9 @@ class App(ttk.Window):
 
         try:
             if next_action["action"] == "add_player":
-                self.model.add_player(next_action["player"], next_action["rating"])
+                self.model.add_player(next_action["player"],
+                 next_action["rating"], next_action["id"])
+                self.model.save_changes()
             elif next_action["action"] == "add_match":
                 # We have and id that could be outdated if the players were deleted and re added
                 # so we need to get the new id
@@ -247,6 +253,7 @@ class App(ttk.Window):
                     ["Rating"], [next_action["new_rating1"]], id1)
                 self.model.update_player(
                     ["Rating"], [next_action["new_rating2"]], id2)
+                self.model.save_changes()
                 self.actions[self.actions_index + 1]["match"] = match_id
         except sql.Error as e:
             print(e.with_traceback())

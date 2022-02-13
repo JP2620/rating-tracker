@@ -38,7 +38,7 @@ class Model():
                 FOREIGN KEY(Player2Id) REFERENCES Player(PlayerId)
                 )
                 """)
-        self.conn.commit()
+        self.save_changes()
         return self.conn
 
     def get_players(self) -> pd.DataFrame:
@@ -135,16 +135,16 @@ class Model():
             return [(PTS_GANA_PEOR_aux[indice], -PTS_GANA_MEJOR_aux[indice]),
                     (PTS_GANA_MEJOR_aux[indice], -PTS_GANA_PEOR_aux[indice])]
 
-    def add_player(self, name: str, rating: int) -> None:
+    def add_player(self, name: str, rating: int, id=None) -> int:
         try:
             self.cur.execute('''
-            INSERT INTO Player (Name, Rating)
-            VALUES (?, ?)
-            ''', (name, rating))
-            self.conn.commit()
+            INSERT INTO Player (PlayerId, Name, Rating)
+            VALUES (?, ?, ?)
+            ''', (id, name, rating))
+
         except sql.Error as e:
             raise e
-        return
+        return self.cur.lastrowid
 
     def add_match(self, p1_id: int, p2_id: int, p1_rating: int, p2_rating: int,
                   p1_score: int, p2_score: int, date) -> int:
@@ -152,8 +152,7 @@ class Model():
             self.cur.execute('''
             INSERT INTO Match (Player1Id, Player2Id, Player1Rating, Player2Rating, Player1Score, Player2Score, Date)
             VALUES (?, ?, ?, ?, ?, ?, ?)
-            ''', (p1_id, p2_id, p1_rating, p2_rating, p1_score, p2_score, date))
-            self.conn.commit()
+            ''', (p1_id, p2_id, p1_rating, p2_rating, p1_score, p2_score, date)) 
         except sql.Error as e:
             raise e
         return self.cur.lastrowid
@@ -166,8 +165,7 @@ class Model():
                 if i < len(fields) - 1:
                     update_str += ", "
             update_str += " WHERE PlayerId = " + str(player_id)
-            self.cur.execute(update_str)
-            self.conn.commit()
+            self.cur.execute(update_str) 
         except sql.Error as e:
             raise e
         return
@@ -183,7 +181,6 @@ class Model():
             self.update_player(["Rating"], [old_ratings[1]], old_ratings[0])
             self.update_player(["Rating"], [old_ratings[3]], old_ratings[2])
             self.delete_match(match_id)
-            self.conn.commit()
         except sql.Error as e:
             raise e
         return
@@ -194,7 +191,6 @@ class Model():
                     DELETE FROM Match
                     WHERE MatchId = ?
                 ''', (match_id,))
-            self.conn.commit()
         except sql.Error as e:
             raise e
         return
@@ -205,6 +201,12 @@ class Model():
                     DELETE FROM Player
                     WHERE Name = ?
                 ''', (name,))
+        except sql.Error as e:
+            raise e
+        return
+    
+    def save_changes(self) -> None:
+        try:
             self.conn.commit()
         except sql.Error as e:
             raise e
