@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 from PlayerForm import PlayerForm
 from MatchForm import MatchForm
 from DataView import DataView
+from ChartsView import ChartsView
 from ActionMenu import ActionMenu
 from Model import Model
 from typing import List
@@ -293,25 +294,6 @@ class App(ttk.Window):
         return
 
     def callback_show_charts(self, jug: str) -> None:
-        newWindow = ttk.Toplevel(self)
-        newWindow.title("Charts")
-        newWindow.geometry("600x500")
-        df = self.model.get_player_history(jug)
-        fig = Figure(figsize=(5, 4), dpi=100)
-        ax1 = fig.add_subplot(111)
-        ax1.scatter([x for x in range(len(df["Rating 1"]))],
-                    df["Rating 1"])
-        ax1.set_xlabel('Partidos')
-        ax1.set_ylabel('Rating')
-        ax1.set_title('Rating vs Partidos')
-        ax1.legend([jug], loc='upper right')
-        ax1.grid(True)
-
-        canvas = FigureCanvasTkAgg(fig, master=newWindow)  # A tk.DrawingArea.
-        canvas.draw()
-
-        player = ttk.StringVar()
-        players_combobox = ttk.Combobox(newWindow, values=self.model.get_players()["Name"].values.tolist(), textvariable=player)
-        players_combobox.pack()
-        canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1, padx=20, pady=10)
+        cv = ChartsView(self, model=self.model)
+        cv.set_player_opt(self.model.get_players()["Name"].values.tolist())
         return
