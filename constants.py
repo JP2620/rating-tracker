@@ -1,10 +1,11 @@
 import json
+import traceback
 
 try:
     with open('conf.json', 'r') as f:
         config = json.load(f)
 except Exception as e:
-    print(e.with_traceback())
+    print(traceback.format_exc())
     exit()
 
 W_WIDTH = config["resolution"]["width"]

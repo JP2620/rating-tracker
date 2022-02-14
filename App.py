@@ -18,6 +18,7 @@ import tkinter as tk
 import sqlite3 as sql
 import pandas as pd
 import openpyxl
+import traceback
 import ttkbootstrap as ttk
 import matplotlib
 matplotlib.use('TkAgg')
@@ -91,7 +92,7 @@ class App(ttk.Window):
             player_id = self.model.add_player(jug, rating)
             self.model.save_changes()
         except sql.Error as e:
-            print(e.with_traceback())
+            print(traceback.format_exc())
             Messagebox.show_info(
                 message="Fallo al agregar jugador", title="Error")
             return
@@ -112,7 +113,7 @@ class App(ttk.Window):
             self.match_form.update_player_opt(
                 list(self.model.get_players()["Name"]))
         except Exception as e:
-            print(e.with_traceback())
+            print(traceback.format_exc())
             pass
         return
 
@@ -165,7 +166,7 @@ class App(ttk.Window):
         try:
             players = self.model.get_players()[["PlayerId", "Name", "Rating"]]
         except sql.Error as e:
-            print(e.with_traceback())
+            print(traceback.format_exc())
             return
 
         players = players.loc[players["Name"].isin([jug1, jug2])]
@@ -178,7 +179,7 @@ class App(ttk.Window):
             match_id = self.model.add_match(
                 jug1[0], jug2[0], jug1[2], jug2[2], sets_1, sets_2, time)
         except sql.Error as e:
-            print(e.with_traceback())
+            print(traceback.format_exc())
             return
 
         deltas = self.model.get_deltas(jug1[2], jug2[2], modalidad)
@@ -191,7 +192,7 @@ class App(ttk.Window):
             self.model.update_player(["Rating"], [new_rating2], jug2[0])
             self.model.save_changes()
         except sql.Error as e:
-            print(e.with_traceback())
+            print(traceback.format_exc())
             return
 
         self.data_view.update_standings(self.model.get_standings())
@@ -228,7 +229,7 @@ class App(ttk.Window):
                 self.model.delete_player(last_action["player"])
             self.model.save_changes()
         except sql.Error as e:
-            print(e.with_traceback())
+            print(traceback.format_exc())
             return
         self.data_view.update_standings(self.model.get_standings())
         self.data_view.update_matches(self.model.get_matches())
@@ -266,7 +267,7 @@ class App(ttk.Window):
                 self.model.save_changes()
                 self.actions[self.actions_index + 1]["match"] = match_id
         except sql.Error as e:
-            print(e.with_traceback())
+            print(traceback.format_exc())
             return
 
         self.data_view.update_standings(self.model.get_standings())
@@ -295,5 +296,7 @@ class App(ttk.Window):
 
     def callback_show_charts(self, jug: str) -> None:
         cv = ChartsView(self, model=self.model)
-        cv.set_player_opt(self.model.get_players()["Name"].values.tolist())
+        opts = self.model.get_players()["Name"].values.tolist()
+        opts.sort()
+        cv.set_player_opt(opts)
         return
