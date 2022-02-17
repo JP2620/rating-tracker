@@ -1,7 +1,6 @@
 import ttkbootstrap as ttk
 import tkinter as tk
 from typing import List, Callable
-from ttkbootstrap.constants import *
 from ttkbootstrap.tooltip import ToolTip
 
 

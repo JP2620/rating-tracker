@@ -1,7 +1,7 @@
 import ttkbootstrap as ttk
-from ttkbootstrap.tableview import *
+from ttkbootstrap.tableview import Tableview
 import sqlite3 as sql
-from ttkbootstrap.constants import *
+from typing import List
 
 
 class DataView(ttk.Notebook):
@@ -15,29 +15,33 @@ class DataView(ttk.Notebook):
         standings_tab = ttk.Frame(self)
         standings_canvas = ttk.Canvas(
             master=standings_tab,
-            relief=FLAT,
+            relief=ttk.FLAT,
             borderwidth=0,
             highlightthickness=0
         )
-        standings_canvas.pack(side=LEFT, fill=BOTH, expand=YES, padx=10, pady=(5,15))
+        standings_canvas.pack(side=ttk.LEFT, fill=ttk.BOTH,
+                              expand=ttk.YES, padx=10, pady=(5, 15))
         standings_frame = ttk.Frame(standings_canvas)
         standings_canvas.create_window(
-            (0, 0), window=standings_frame, anchor=NW)
-        standings_frame.pack(fill=BOTH)
-        self.standings_tv = Tableview(standings_frame, searchable=True, height=13)
+            (0, 0), window=standings_frame, anchor=ttk.NW)
+        standings_frame.pack(fill=ttk.BOTH)
+        self.standings_tv = Tableview(
+            standings_frame, searchable=True, height=13)
         self.standings_tv.grid(row=0, column=0, sticky="NSEW")
 
         matches_tab = ttk.Frame(self)
         matches_canvas = ttk.Canvas(
             master=matches_tab,
-            relief=FLAT,
+            relief=ttk.FLAT,
             borderwidth=0,
             highlightthickness=0
         )
-        matches_canvas.pack(side=LEFT, fill=BOTH, expand=YES, padx=10, pady=(5,15))
+        matches_canvas.pack(side=ttk.LEFT, fill=ttk.BOTH,
+                            expand=ttk.YES, padx=10, pady=(5, 15))
         matches_frame = ttk.Frame(matches_canvas)
-        matches_canvas.create_window((0, 0), window=matches_frame, anchor=NW)
-        matches_frame.pack(fill=BOTH)
+        matches_canvas.create_window(
+            (0, 0), window=matches_frame, anchor=ttk.NW)
+        matches_frame.pack(fill=ttk.BOTH)
         self.matches_tv = Tableview(matches_frame, searchable=True, height=13)
         self.matches_tv.grid(row=0, column=0, sticky="NSEW")
 
@@ -54,7 +58,7 @@ class DataView(ttk.Notebook):
         for column in self.standings_tv.get_columns():
             self.standings_tv.align_column_left(cid=column.cid)
             self.standings_tv.align_heading_left(cid=column.cid)
-        self.standings_tv.pack(fill=BOTH)
+        self.standings_tv.pack(fill=ttk.BOTH)
         return
 
     def update_matches(self, matches: List) -> None:
@@ -65,6 +69,6 @@ class DataView(ttk.Notebook):
         ], rowdata=matches)
         for column in self.matches_tv.get_columns():
             self.matches_tv.align_column_left(cid=column.cid)
-            self.matches_tv.pack(fill=BOTH)
-        self.matches_tv.pack(fill=BOTH)
+            self.matches_tv.pack(fill=ttk.BOTH)
+        self.matches_tv.pack(fill=ttk.BOTH)
         return

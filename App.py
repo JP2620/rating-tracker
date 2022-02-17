@@ -1,10 +1,8 @@
 from constants import *
 from ttkbootstrap.tooltip import ToolTip
-from ttkbootstrap.constants import *
 from ttkbootstrap.dialogs import Messagebox
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-import numpy as np
 import matplotlib.pyplot as plt
 from PlayerForm import PlayerForm
 from MatchForm import MatchForm
@@ -19,6 +17,7 @@ import sqlite3 as sql
 import pandas as pd
 import openpyxl
 import traceback
+import ttkbootstrap.constants
 import ttkbootstrap as ttk
 import matplotlib
 matplotlib.use('TkAgg')
@@ -37,6 +36,7 @@ class App(ttk.Window):
         self.create_widgets()
         self.actions = []
         self.actions_index = -1
+        # self.import_excel(file_path="test copy.xlsx")
         return
 
     def set_icon(self, icon_path: str) -> None:
@@ -68,7 +68,7 @@ class App(ttk.Window):
                                          self.callback_redo,
                                          self.callback_export_excel,
                                          lambda: self.callback_show_charts(
-                                             "GASTON BRANDAN")
+                                             "")
                                      ])
 
         self.match_form.grid(row=0, column=0, sticky="EW",
@@ -300,3 +300,24 @@ class App(ttk.Window):
         opts.sort()
         cv.set_player_opt(opts)
         return
+    
+    # def import_excel(self, file_path: str) -> None:
+    #     df = pd.read_excel(file_path, sheet_name="Posiciones")
+    #     players = df[["Participante", "Rating"]].values.tolist()
+    #     for player in players:
+    #         self.model.add_player(player[0], player[1])
+    #     self.model.save_changes()
+
+    #     df = self.model.get_players()[["PlayerId", "Name"]]
+    #     df1 = pd.read_excel(file_path, sheet_name="Partidos")
+    #     df1['Match id'] = df1.reset_index().index
+    #     df1 = df1.sort_values(by="Match id", ascending=True)
+    #     for index, row in df1.iterrows():
+    #         mod = max(row["Sets Jugador 1"], row["Sets Jugador 2"]) * 2 - 1
+    #         self.callback_add_match(jug1=row["Jugador 1"], jug2=row["Jugador 2"],
+    #                                 sets_1=row["Sets Jugador 1"], sets_2=row["Sets Jugador 2"],
+    #                                 modalidad=mod)
+    #     self.model.save_changes()
+    #     self.data_view.update_standings(self.model.get_standings())
+    #     self.data_view.update_matches(self.model.get_matches())
+    #     return
