@@ -73,26 +73,19 @@ class Model():
         SELECT t2.JUG1, t2.SETS1 || " - " || t2.SETS2 AS RESULTADO, t2.JUG2
         FROM
         (
-        	(
-        	SELECT Match.MatchId, Player.Name as JUG1, Match.Player1Score AS SETS1  
-        	FROM 
-        	(
-        		Match JOIN Player
-        		ON Match.Player1Id = Player.PlayerId
-        	)
-        	)
-        	AS t0
-        	JOIN
-        	(
-        	SELECT Match.MatchId, Player.Name AS JUG2, Match.Player2Score AS SETS2
-        	FROM
-        	(
-        		Match JOIN Player
-        		ON Match.Player2Id = Player.PlayerId
-        	)
-        	)
-        	AS t1
-        	ON t0.MatchId = t1.MatchId
+            (
+                SELECT Match.MatchId, Player.Name as JUG1, Match.Player1Score AS SETS1  
+                FROM 
+                    Match JOIN Player
+                    ON Match.Player1Id = Player.PlayerId                    
+            ) AS t0
+            JOIN
+            (
+                SELECT Match.MatchId, Player.Name AS JUG2, Match.Player2Score AS SETS2
+                FROM
+                    Match JOIN Player
+                    ON Match.Player2Id = Player.PlayerId
+            ) AS t1 ON t0.MatchId = t1.MatchId
         ) AS t2
         ''')
         matches = self.cur.fetchall()
@@ -100,10 +93,6 @@ class Model():
         return matches
 
     def get_deltas(self, rating_jug_1: int, rating_jug_2: int, sets_a_jugar: int) -> List[tuple]:
-        """
-          retorna dos tuplas con los delta de victoria/derrota de cada
-          jugador
-        """
         mejor = 0
         peor = 0
         if rating_jug_1 >= rating_jug_2:
@@ -125,9 +114,9 @@ class Model():
         # Ajusta delta segun modalidad
         modalidad = "Mejor de " + str(sets_a_jugar)
         PTS_GANA_MEJOR_aux = [int(puntaje * MULTIPLICADORES[modalidad])
-                              for puntaje in PTS_GANA_MEJOR]
+                                for puntaje in PTS_GANA_MEJOR]
         PTS_GANA_PEOR_aux = [int(puntaje * MULTIPLICADORES[modalidad])
-                             for puntaje in PTS_GANA_PEOR]
+                                for puntaje in PTS_GANA_PEOR]
 
         if (mejor == rating_jug_1):
             return [(PTS_GANA_MEJOR_aux[indice], -PTS_GANA_PEOR_aux[indice]),
@@ -148,7 +137,7 @@ class Model():
         return self.cur.lastrowid
 
     def add_match(self, p1_id: int, p2_id: int, p1_rating: int, p2_rating: int,
-                  p1_score: int, p2_score: int, date) -> int:
+                    p1_score: int, p2_score: int, date) -> int:
         try:
             self.cur.execute('''
             INSERT INTO Match (Player1Id, Player2Id, Player1Rating, Player2Rating, Player1Score, Player2Score, Date)
@@ -216,25 +205,25 @@ class Model():
     def get_player_history(self, name: str) -> pd.DataFrame:
         sql_query = """
             SELECT
-              CASE WHEN t0.Name = '{}' THEN t0.Name ELSE t1.name2 END AS "Jugador 1",
-              CASE WHEN t0.Name = '{}' THEN Match.Player1Rating ELSE Match.Player2Rating END AS "Rating 1",
-              CASE WHEN t0.Name = '{}' THEN Match.Player1Score ELSE Match.Player2Score END AS "Sets 1",
-              CASE WHEN t0.Name = '{}' THEN Match.Player2Score ELSE Match.Player1Score END AS "Sets 2",
-              CASE WHEN t0.Name = '{}' THEN Match.Player2Rating ELSE Match.Player1Rating END AS "Rating 2",
-              CASE WHEN t0.Name = '{}' THEN t1.name2 ELSE t0.Name END AS "Jugador 2"
+                CASE WHEN t0.Name = '{}' THEN t0.Name ELSE t1.name2 END AS "Jugador 1",
+                CASE WHEN t0.Name = '{}' THEN Match.Player1Rating ELSE Match.Player2Rating END AS "Rating 1",
+                CASE WHEN t0.Name = '{}' THEN Match.Player1Score ELSE Match.Player2Score END AS "Sets 1",
+                CASE WHEN t0.Name = '{}' THEN Match.Player2Score ELSE Match.Player1Score END AS "Sets 2",
+                CASE WHEN t0.Name = '{}' THEN Match.Player2Rating ELSE Match.Player1Rating END AS "Rating 2",
+                CASE WHEN t0.Name = '{}' THEN t1.name2 ELSE t0.Name END AS "Jugador 2"
             FROM
-              Match
-              JOIN Player AS t0 ON Match.Player1Id = t0.PlayerId
-              JOIN (
+                Match
+                JOIN Player AS t0 ON Match.Player1Id = t0.PlayerId
+                JOIN (
                 SELECT
-                  Player.Name AS name2,
-                  Player.PlayerId AS id2
+                    Player.Name AS name2,
+                    Player.PlayerId AS id2
                 FROM
-                  Player
-              ) AS t1 ON Match.Player2Id = t1.id2
+                    Player
+            ) AS t1 ON Match.Player2Id = t1.id2
             WHERE
-              t1.name2 = "{}"
-              OR t0.Name = "{}"
+                t1.name2 = "{}"
+                OR t0.Name = "{}"
         """
         df = pd.read_sql_query(sql_query.format(
             name, name, name, name, name, name, name, name), self.conn)

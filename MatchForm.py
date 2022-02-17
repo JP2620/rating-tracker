@@ -22,20 +22,20 @@ class MatchForm(ttk.LabelFrame):
     self.sets_1 = ttk.IntVar(self)
     self.jug_1_name = ttk.Combobox(self, textvariable=self.names_1)
     self.jug_1_sets = ttk.Combobox(self, textvariable=self.sets_1,
-     values=[0,1], width=1)
+      values=[str(0), str(1)], width=1)
     self.jug_1_delta = ttk.Label(self, text="", width=7)
 
     self.names_2 = ttk.StringVar(self)
     self.sets_2 = ttk.IntVar(self)
     self.jug_2_name = ttk.Combobox(self, textvariable=self.names_2)
     self.jug_2_sets = ttk.Combobox(self, textvariable=self.sets_2,
-      values=[0,1], width=1)
+      values=[str(0), str(1)], width=1)
     self.jug_2_delta = ttk.Label(self, text="", width=7)
 
     self.btn_save_match = ttk.Button(self, text="Guardar resultado",
-      width=20, command=self.callbacks[0], bootstyle="primary")
+      width=20, command=self.callbacks[0], bootstyle="primary") #type:ignore
     self.btn_check_deltas = ttk.Button(self, text="Chequear +/-",
-      width=20, command=self.callbacks[1], bootstyle="outline")
+      width=20, command=self.callbacks[1], bootstyle="outline") #type:ignore
     
     self.modalidad = ttk.IntVar(self)
     self.modalidad.set(1)

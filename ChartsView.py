@@ -24,7 +24,7 @@ class ChartsView(ttk.Toplevel):
         self.player = ttk.StringVar(self)
         form_frame = ttk.Frame(self)
         self.players_cb = ttk.Combobox(form_frame,
-                                       textvariable=self.player)
+                                        textvariable=self.player)
         label = ttk.Label(form_frame, text="Jugador:")
         label.grid(row=0, column=0, padx=0, pady=0, sticky="NW")
         self.player.trace("w", self.callback_player_chart)

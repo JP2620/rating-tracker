@@ -10,7 +10,7 @@ from DataView import DataView
 from ChartsView import ChartsView
 from ActionMenu import ActionMenu
 from Model import Model
-from typing import List
+from typing import List, Any
 from datetime import datetime
 import tkinter as tk
 import sqlite3 as sql
@@ -36,7 +36,6 @@ class App(ttk.Window):
         self.create_widgets()
         self.actions = []
         self.actions_index = -1
-        # self.import_excel(file_path="test copy.xlsx")
         return
 
     def set_icon(self, icon_path: str) -> None:
@@ -45,11 +44,11 @@ class App(ttk.Window):
 
     def create_widgets(self) -> None:
         self.player_form = PlayerForm(self, callback=lambda: self.callback_add_player
-                                      (
-                                          self.player_form.get_player().upper(),
-                                          int(self.player_form.get_rating())
-                                      ),
-                                      text="Agregar jugador")
+                                    (
+                                        self.player_form.get_player().upper(),
+                                        int(self.player_form.get_rating())
+                                    ),
+                                    text="Agregar jugador")
         self.match_form = MatchForm(self, text="Agregar resultado",
                                     callbacks=[
                                         lambda: self.callback_add_match(
@@ -63,22 +62,22 @@ class App(ttk.Window):
                                     ])
         self.data_view = DataView(self)
         self.btns_frame = ActionMenu(self,
-                                     callbacks=[
-                                         self.callback_undo,
-                                         self.callback_redo,
-                                         self.callback_export_excel,
-                                         lambda: self.callback_show_charts(
-                                             "")
-                                     ])
+                                    callbacks=[
+                                        self.callback_undo,
+                                        self.callback_redo,
+                                        self.callback_export_excel,
+                                        lambda: self.callback_show_charts(
+                                            "")
+                                    ])
 
         self.match_form.grid(row=0, column=0, sticky="EW",
-                             padx=(70, 0), pady=10)
+                            padx=(70, 0), pady=10)
         self.player_form.grid(
             row=1, column=0, sticky="EW", padx=(70, 0), pady=10)
         self.data_view.grid(row=2, column=0, sticky="EW",
                             padx=(70, 0), pady=10)
         self.btns_frame.grid(row=0, column=1, rowspan=3,
-                             padx=5, pady=10, sticky="NS")
+                            padx=5, pady=10, sticky="NS")
 
         self.match_form.update_player_opt(
             list(self.model.get_players()["Name"]))
@@ -131,28 +130,28 @@ class App(ttk.Window):
         deltas = None
         if players[0][0] == jug1:
             deltas = self.model.get_deltas(players[0][1], players[1][1],
-                                           self.match_form.get_modalidad())
+                                        self.match_form.get_modalidad())
         else:
             deltas = self.model.get_deltas(players[1][1], players[0][1],
-                                           self.match_form.get_modalidad())
+                                        self.match_form.get_modalidad())
 
         self.match_form.set_deltas(
             "+" + str(deltas[0][0]) + "/" + str(deltas[0][1]),
             "+" + str(deltas[1][0]) + "/" + str(deltas[1][1]))
         return
 
-    def callback_add_match(self, jug1: str, jug2: str, sets_1: int, sets_2: int, modalidad: int) -> None:
+    def callback_add_match(self, name1: str, name2: str, sets_1: int, sets_2: int, modalidad: int) -> None:
         players = list(self.model.get_players()["Name"])
 
         max_sets = modalidad // 2 + 1
         error_msg = ""
-        if jug1 == jug2:
+        if name1 == name2:
             error_msg = "Error: jugadores iguales"
         elif (sets_1 == sets_2):
             error_msg = "Error: sets iguales"
         elif (sets_1 < 0 or sets_2 < 0):
             error_msg = "Error: sets negativos"
-        elif ((not (jug1 in players)) or (not (jug2 in players))):
+        elif ((not (name1 in players)) or (not (name2 in players))):
             error_msg = "Error: jugadores no encontrados"
         elif (sets_1 > max_sets or sets_2 > max_sets):
             error_msg = "Error: cantidad de sets mayor a la permitida"
@@ -169,9 +168,9 @@ class App(ttk.Window):
             print(traceback.format_exc())
             return
 
-        players = players.loc[players["Name"].isin([jug1, jug2])]
+        players = players.loc[players["Name"].isin([name1, name2])]
         players = players.values.tolist()
-        jug1, jug2 = (players[0], players[1]) if players[0][1] == jug1 \
+        jug1, jug2 = (players[0], players[1]) if players[0][1] == name1 \
             else (players[1], players[0])
         time = datetime.now()
 
@@ -244,7 +243,7 @@ class App(ttk.Window):
         try:
             if next_action["action"] == "add_player":
                 self.model.add_player(next_action["player"],
-                                      next_action["rating"], next_action["id"])
+                                    next_action["rating"], next_action["id"])
                 self.model.save_changes()
             elif next_action["action"] == "add_match":
                 # We have and id that could be outdated if the players were deleted and re added
@@ -296,28 +295,8 @@ class App(ttk.Window):
 
     def callback_show_charts(self, jug: str) -> None:
         cv = ChartsView(self, model=self.model)
-        opts = self.model.get_players()["Name"].values.tolist()
+        opts = self.model.get_players()["Name"].values.tolist() # type: ignore
         opts.sort()
         cv.set_player_opt(opts)
         return
     
-    # def import_excel(self, file_path: str) -> None:
-    #     df = pd.read_excel(file_path, sheet_name="Posiciones")
-    #     players = df[["Participante", "Rating"]].values.tolist()
-    #     for player in players:
-    #         self.model.add_player(player[0], player[1])
-    #     self.model.save_changes()
-
-    #     df = self.model.get_players()[["PlayerId", "Name"]]
-    #     df1 = pd.read_excel(file_path, sheet_name="Partidos")
-    #     df1['Match id'] = df1.reset_index().index
-    #     df1 = df1.sort_values(by="Match id", ascending=True)
-    #     for index, row in df1.iterrows():
-    #         mod = max(row["Sets Jugador 1"], row["Sets Jugador 2"]) * 2 - 1
-    #         self.callback_add_match(jug1=row["Jugador 1"], jug2=row["Jugador 2"],
-    #                                 sets_1=row["Sets Jugador 1"], sets_2=row["Sets Jugador 2"],
-    #                                 modalidad=mod)
-    #     self.model.save_changes()
-    #     self.data_view.update_standings(self.model.get_standings())
-    #     self.data_view.update_matches(self.model.get_matches())
-    #     return

@@ -20,7 +20,7 @@ class DataView(ttk.Notebook):
             highlightthickness=0
         )
         standings_canvas.pack(side=ttk.LEFT, fill=ttk.BOTH,
-                              expand=ttk.YES, padx=10, pady=(5, 15))
+                            expand=ttk.YES, padx=10, pady=(5, 15))
         standings_frame = ttk.Frame(standings_canvas)
         standings_canvas.create_window(
             (0, 0), window=standings_frame, anchor=ttk.NW)
