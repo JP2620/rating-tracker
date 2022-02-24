@@ -11,6 +11,6 @@ except Exception as e:
 W_WIDTH: int = config["resolution"]["width"]
 W_HEIGHT: int = config["resolution"]["height"]
 MULTIPLICADORES: Dict[str, float] = config["multipliers"]
-DIFF_RATINGS: List[int]  = config["rating_deltas"]
+DIFF_RATINGS: List[int] = config["rating_deltas"]
 PTS_GANA_MEJOR: List[int] = config["points_better_wins"]
 PTS_GANA_PEOR: List[int] = config["points_worse_wins"]

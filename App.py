@@ -44,11 +44,11 @@ class App(ttk.Window):
 
     def create_widgets(self) -> None:
         self.player_form = PlayerForm(self, callback=lambda: self.callback_add_player
-                                    (
-                                        self.player_form.get_player().upper(),
-                                        int(self.player_form.get_rating())
-                                    ),
-                                    text="Agregar jugador")
+                                      (
+                                          self.player_form.get_player().upper(),
+                                          int(self.player_form.get_rating())
+                                      ),
+                                      text="Agregar jugador")
         self.match_form = MatchForm(self, text="Agregar resultado",
                                     callbacks=[
                                         lambda: self.callback_add_match(
@@ -62,22 +62,22 @@ class App(ttk.Window):
                                     ])
         self.data_view = DataView(self)
         self.btns_frame = ActionMenu(self,
-                                    callbacks=[
-                                        self.callback_undo,
-                                        self.callback_redo,
-                                        self.callback_export_excel,
-                                        lambda: self.callback_show_charts(
-                                            "")
-                                    ])
+                                     callbacks=[
+                                         self.callback_undo,
+                                         self.callback_redo,
+                                         self.callback_export_excel,
+                                         lambda: self.callback_show_charts(
+                                             "")
+                                     ])
 
         self.match_form.grid(row=0, column=0, sticky="EW",
-                            padx=(70, 0), pady=10)
+                             padx=(70, 0), pady=10)
         self.player_form.grid(
             row=1, column=0, sticky="EW", padx=(70, 0), pady=10)
         self.data_view.grid(row=2, column=0, sticky="EW",
                             padx=(70, 0), pady=10)
         self.btns_frame.grid(row=0, column=1, rowspan=3,
-                            padx=5, pady=10, sticky="NS")
+                             padx=5, pady=10, sticky="NS")
 
         self.match_form.update_player_opt(
             list(self.model.get_players()["Name"]))
@@ -130,10 +130,10 @@ class App(ttk.Window):
         deltas = None
         if players[0][0] == jug1:
             deltas = self.model.get_deltas(players[0][1], players[1][1],
-                                        self.match_form.get_modalidad())
+                                           self.match_form.get_modalidad())
         else:
             deltas = self.model.get_deltas(players[1][1], players[0][1],
-                                        self.match_form.get_modalidad())
+                                           self.match_form.get_modalidad())
 
         self.match_form.set_deltas(
             "+" + str(deltas[0][0]) + "/" + str(deltas[0][1]),
@@ -243,7 +243,7 @@ class App(ttk.Window):
         try:
             if next_action["action"] == "add_player":
                 self.model.add_player(next_action["player"],
-                                    next_action["rating"], next_action["id"])
+                                      next_action["rating"], next_action["id"])
                 self.model.save_changes()
             elif next_action["action"] == "add_match":
                 # We have and id that could be outdated if the players were deleted and re added
@@ -295,8 +295,7 @@ class App(ttk.Window):
 
     def callback_show_charts(self, jug: str) -> None:
         cv = ChartsView(self, model=self.model)
-        opts = self.model.get_players()["Name"].values.tolist() # type: ignore
+        opts = self.model.get_players()["Name"].values.tolist()  # type: ignore
         opts.sort()
         cv.set_player_opt(opts)
         return
-    

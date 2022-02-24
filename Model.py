@@ -114,9 +114,9 @@ class Model():
         # Ajusta delta segun modalidad
         modalidad = "Mejor de " + str(sets_a_jugar)
         PTS_GANA_MEJOR_aux = [int(puntaje * MULTIPLICADORES[modalidad])
-                                for puntaje in PTS_GANA_MEJOR]
+                              for puntaje in PTS_GANA_MEJOR]
         PTS_GANA_PEOR_aux = [int(puntaje * MULTIPLICADORES[modalidad])
-                                for puntaje in PTS_GANA_PEOR]
+                             for puntaje in PTS_GANA_PEOR]
 
         if (mejor == rating_jug_1):
             return [(PTS_GANA_MEJOR_aux[indice], -PTS_GANA_PEOR_aux[indice]),
@@ -137,7 +137,7 @@ class Model():
         return self.cur.lastrowid
 
     def add_match(self, p1_id: int, p2_id: int, p1_rating: int, p2_rating: int,
-                    p1_score: int, p2_score: int, date) -> int:
+                  p1_score: int, p2_score: int, date) -> int:
         try:
             self.cur.execute('''
             INSERT INTO Match (Player1Id, Player2Id, Player1Rating, Player2Rating, Player1Score, Player2Score, Date)
