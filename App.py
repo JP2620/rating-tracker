@@ -71,11 +71,11 @@ class App(ttk.Window):
                                      ])
 
         self.match_form.grid(row=0, column=0, sticky="EW",
-                             padx=(70, 0), pady=10)
+                             padx=(50, 0), pady=10)
         self.player_form.grid(
-            row=1, column=0, sticky="EW", padx=(70, 0), pady=10)
+            row=1, column=0, sticky="EW", padx=(50, 0), pady=10)
         self.data_view.grid(row=2, column=0, sticky="EW",
-                            padx=(70, 0), pady=10)
+                            padx=(50, 0), pady=10)
         self.btns_frame.grid(row=0, column=1, rowspan=3,
                              padx=5, pady=10, sticky="NS")
 
@@ -252,7 +252,8 @@ class App(ttk.Window):
                 players = players.loc[players["Name"].isin(
                     [next_action["jug1_name"], next_action["jug2_name"]])]
                 players = players.values.tolist()
-                id1, id2 = (players[0][0], players[1][0]) if players[0][1] == next_action["jug1_name"] \
+                id1, id2 = (players[0][0], players[1][0]) \
+                    if players[0][1] == next_action["jug1_name"]\
                     else (players[1][0], players[0][0])
 
                 match_id = self.model.add_match(id1,

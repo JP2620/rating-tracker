@@ -31,7 +31,7 @@ class PlayerForm(ttk.LabelFrame):
         self.btn_add_jugador = ttk.Button(self, text="Agregar jugador",
                                           width=20, command=self.callback)
         self.btn_add_jugador.grid(
-            row=1, column=3, padx=(160, 10), pady=(7, 15))
+            row=1, column=3, padx=(200, 10), pady=(7, 15))
         return
 
     def get_player(self) -> str:

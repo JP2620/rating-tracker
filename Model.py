@@ -8,7 +8,7 @@ from constants import *
 class Model():
     def __init__(self):
         try:
-            self.conn = sql.connect('liga.db')
+            self.conn = sql.connect('ligatest2.db')
             self.cur = self.conn.cursor()
             self.create_database()
         except sql.Error as e:

@@ -2,7 +2,7 @@
 
 - Un programa con interfaz gráfica para trackear ratings de jugadores, contándose con la posibilidad de exportar los datos, manejados con sqlite3, a excel.
 
-![](images/UI.png)
+![](images/rating-tracker-x2.gif)
 
 ## Cómo funciona
 

@@ -60,11 +60,11 @@ class MatchForm(ttk.LabelFrame):
         self.jug_1_name.grid(row=1, column=0, pady=10, padx=10)
         self.jug_1_sets.grid(row=1, column=1, pady=10, padx=10)
         self.jug_1_delta.grid(row=1, column=2, pady=10, padx=55)
-        self.btn_save_match.grid(row=1, column=3, pady=10, padx=10)
+        self.btn_save_match.grid(row=1, column=3, pady=10, padx=(50, 10))
         self.jug_2_name.grid(row=2, column=0, pady=15, padx=10)
         self.jug_2_sets.grid(row=2, column=1, pady=15, padx=10)
         self.jug_2_delta.grid(row=2, column=2, pady=15, padx=55)
-        self.btn_check_deltas.grid(row=2, column=3, pady=15, padx=10)
+        self.btn_check_deltas.grid(row=2, column=3, pady=15, padx=(50, 10))
         return
 
     def update_player_opt(self, players: List[str]) -> None:
