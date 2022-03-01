@@ -27,7 +27,7 @@ class DataView(ttk.Notebook):
         standings_frame.pack(fill=ttk.BOTH)
         self.standings_tv = Tableview(
             standings_frame, searchable=True, height=13)
-        self.standings_tv.grid(row=0, column=0, sticky="NSEW")
+        self.standings_tv.pack(fill=ttk.BOTH)
 
         matches_tab = ttk.Frame(self)
         matches_canvas = ttk.Canvas(
@@ -43,14 +43,14 @@ class DataView(ttk.Notebook):
             (0, 0), window=matches_frame, anchor=ttk.NW)
         matches_frame.pack(fill=ttk.BOTH)
         self.matches_tv = Tableview(matches_frame, searchable=True, height=13)
-        self.matches_tv.grid(row=0, column=0, sticky="NSEW")
+        self.matches_tv.pack(fill=ttk.BOTH)
 
         self.add(standings_tab, text="Posiciones")
         self.add(matches_tab, text="Partidos")
 
     def update_standings(self, standings: List) -> None:
         self.standings_tv.build_table_data(coldata=[
-            {"text": "Posición", "stretch": True, "width": 60},
+            {"text": "Posición", "stretch": True, "width": 100},
             {"text": "Nombre", "stretch": True},
             {"text": "Rating", "stretch": True},
         ], rowdata=standings)
@@ -64,11 +64,10 @@ class DataView(ttk.Notebook):
     def update_matches(self, matches: List) -> None:
         self.matches_tv.build_table_data(coldata=[
             {"text": "Jugador 1", "stretch": True},
-            {"text": "Resultado", "stretch": True, "width": 60},
+            {"text": "Resultado", "stretch": True, "width": 100},
             {"text": "Jugador 2", "stretch": True},
         ], rowdata=matches)
         for column in self.matches_tv.get_columns():
             self.matches_tv.align_column_left(cid=column.cid)
-            self.matches_tv.pack(fill=ttk.BOTH)
         self.matches_tv.pack(fill=ttk.BOTH)
         return
